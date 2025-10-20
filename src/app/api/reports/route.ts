@@ -34,28 +34,41 @@ export async function GET(req: NextRequest) {
         startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     }
 
-    // Get summary data
-    const orders = await prisma.order.findMany({
+    // Get summary data (excluding cancelled orders)
+    const orders = await prisma.orders.findMany({
       where: {
         tenantId: tenant.id,
         createdAt: { gte: startDate },
         status: "COMPLETED",
       },
       include: {
-        items: true,
-        payments: true,
+        order_items: true,
+      },
+    })
+
+    // Get cancelled orders for reporting
+    const cancelledOrders = await prisma.orders.findMany({
+      where: {
+        tenantId: tenant.id,
+        createdAt: { gte: startDate },
+        status: "CANCELLED",
+      },
+      include: {
+        order_items: true,
       },
     })
 
     const totalSales = orders.reduce((sum, order) => sum + order.total, 0)
     const totalOrders = orders.length
     const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0
+    const totalCancelled = cancelledOrders.reduce((sum, order) => sum + order.total, 0)
+    const cancelledCount = cancelledOrders.length
 
     // Get top product
-    const productSales = await prisma.orderItem.groupBy({
+    const productSales = await prisma.order_items.groupBy({
       by: ["name"],
       where: {
-        order: {
+        orders: {
           tenantId: tenant.id,
           createdAt: { gte: startDate },
           status: "COMPLETED",
@@ -85,15 +98,14 @@ export async function GET(req: NextRequest) {
       return acc
     }, {} as Record<string, { date: string; sales: number; orders: number }>)
 
-    // Get payment methods breakdown
+    // Get payment methods breakdown (using paymentMethod from orders)
     const paymentMethods = orders.reduce((acc, order) => {
-      order.payments.forEach((payment) => {
-        if (!acc[payment.method]) {
-          acc[payment.method] = { method: payment.method, count: 0, total: 0 }
-        }
-        acc[payment.method].count += 1
-        acc[payment.method].total += payment.amount
-      })
+      const method = order.paymentMethod || "UNKNOWN"
+      if (!acc[method]) {
+        acc[method] = { method, count: 0, total: 0 }
+      }
+      acc[method].count += 1
+      acc[method].total += order.total
       return acc
     }, {} as Record<string, { method: string; count: number; total: number }>)
 
@@ -103,8 +115,10 @@ export async function GET(req: NextRequest) {
         totalOrders,
         averageOrderValue,
         topProduct,
+        totalCancelled,
+        cancelledCount,
       },
-      dailySales: Object.values(dailySales).sort((a, b) => 
+      dailySales: Object.values(dailySales).sort((a, b) =>
         a.date.localeCompare(b.date)
       ),
       productSales: productSales.map((p) => ({

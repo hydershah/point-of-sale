@@ -13,6 +13,8 @@ interface ReportData {
     totalOrders: number
     averageOrderValue: number
     topProduct: string
+    totalCancelled: number
+    cancelledCount: number
   }
   dailySales: Array<{
     date: string
@@ -34,16 +36,28 @@ interface ReportData {
 export default function ReportsPage() {
   const [period, setPeriod] = useState("week")
   const [data, setData] = useState<ReportData | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const loadReport = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const response = await fetch(`/api/reports?period=${period}`)
+      if (!response.ok) {
+        throw new Error("Failed to fetch report data")
+      }
       const reportData = await response.json()
+
+      // Validate response structure
+      if (!reportData.summary) {
+        throw new Error("Invalid report data structure")
+      }
+
       setData(reportData)
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to load report:", error)
+      setError(error.message || "Failed to load reports")
     } finally {
       setLoading(false)
     }
@@ -53,10 +67,24 @@ export default function ReportsPage() {
     loadReport()
   }, [loadReport])
 
-  if (loading || !data) {
+  if (loading) {
     return (
       <div className="p-8">
-        <div className="text-center">Loading reports...</div>
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <p className="mt-4 text-muted-foreground">Loading reports...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !data) {
+    return (
+      <div className="p-8">
+        <div className="text-center py-12">
+          <p className="text-destructive mb-4">{error || "Failed to load reports"}</p>
+          <Button onClick={loadReport}>Retry</Button>
+        </div>
       </div>
     )
   }
@@ -113,7 +141,7 @@ export default function ReportsPage() {
               {formatCurrency(data.summary.totalSales)}
             </div>
             <p className="text-xs text-muted-foreground">
-              +12% from last period
+              Excludes cancelled orders
             </p>
           </CardContent>
         </Card>
@@ -126,7 +154,7 @@ export default function ReportsPage() {
           <CardContent>
             <div className="text-2xl font-bold">{data.summary.totalOrders}</div>
             <p className="text-xs text-muted-foreground">
-              +8% from last period
+              Completed orders only
             </p>
           </CardContent>
         </Card>
@@ -143,7 +171,7 @@ export default function ReportsPage() {
               {formatCurrency(data.summary.averageOrderValue)}
             </div>
             <p className="text-xs text-muted-foreground">
-              +4% from last period
+              Per completed order
             </p>
           </CardContent>
         </Card>
@@ -160,6 +188,33 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Cancelled Orders Card */}
+      {data.summary.cancelledCount > 0 && (
+        <div className="mb-8">
+          <Card className="border-destructive/50">
+            <CardHeader>
+              <CardTitle className="text-destructive">Cancelled Orders</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Total Cancelled</p>
+                  <p className="text-2xl font-bold text-destructive">
+                    {data.summary.cancelledCount} {data.summary.cancelledCount === 1 ? 'order' : 'orders'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Refunded Amount</p>
+                  <p className="text-2xl font-bold text-destructive">
+                    {formatCurrency(data.summary.totalCancelled)}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Daily Sales */}

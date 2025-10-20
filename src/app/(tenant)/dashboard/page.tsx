@@ -163,7 +163,7 @@ async function getStats(tenantId: string) {
     recentOrders,
     topProducts,
   ] = await Promise.all([
-    prisma.order.aggregate({
+    prisma.orders.aggregate({
       where: {
         tenantId,
         createdAt: { gte: startOfToday },
@@ -172,7 +172,7 @@ async function getStats(tenantId: string) {
       _sum: { total: true },
       _count: true,
     }),
-    prisma.order.aggregate({
+    prisma.orders.aggregate({
       where: {
         tenantId,
         createdAt: { gte: startOfMonth },
@@ -181,19 +181,19 @@ async function getStats(tenantId: string) {
       _sum: { total: true },
       _count: true,
     }),
-    prisma.product.count({ where: { tenantId, isActive: true } }),
-    prisma.product.count({
+    prisma.products.count({ where: { tenantId, isActive: true } }),
+    prisma.products.count({
       where: {
         tenantId,
         trackStock: true,
-        stock: { lte: prisma.product.fields.lowStockAlert },
+        stock: { lte: prisma.products.fields.lowStockAlert },
       },
     }),
-    prisma.customer.count({ where: { tenantId } }),
-    prisma.customer.count({
+    prisma.customers.count({ where: { tenantId } }),
+    prisma.customers.count({
       where: { tenantId, createdAt: { gte: startOfMonth } },
     }),
-    prisma.order.findMany({
+    prisma.orders.findMany({
       where: { tenantId },
       take: 5,
       orderBy: { createdAt: "desc" },
@@ -206,10 +206,10 @@ async function getStats(tenantId: string) {
         createdAt: true,
       },
     }),
-    prisma.orderItem.groupBy({
+    prisma.order_items.groupBy({
       by: ["productId", "name"],
       where: {
-        order: {
+        orders: {
           tenantId,
           createdAt: { gte: startOfMonth },
           status: "COMPLETED",

@@ -20,7 +20,7 @@ export const authOptions: NextAuthOptions = {
         const password = credentials.password
 
         // Check if this is a super admin login
-        const superAdmin = await prisma.superAdmin.findUnique({
+        const superAdmin = await prisma.super_admins.findUnique({
           where: { email },
         })
 
@@ -40,13 +40,13 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Try to find tenant user by email
-        const user = await prisma.user.findFirst({
+        const user = await prisma.users.findFirst({
           where: {
             email,
             isActive: true,
           },
           include: {
-            tenant: true,
+            tenants: true,
           },
         })
 

@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const tenantData = await prisma.tenant.findUnique({
+    const tenantData = await prisma.tenants.findUnique({
       where: { id: tenant.id },
       include: { settings: true },
     })
@@ -81,7 +81,7 @@ export async function PUT(req: NextRequest) {
     } = body
 
     // Update tenant
-    await prisma.tenant.update({
+    await prisma.tenants.update({
       where: { id: tenant.id },
       data: {
         name: businessName,
@@ -92,7 +92,7 @@ export async function PUT(req: NextRequest) {
     })
 
     // Update settings
-    await prisma.tenantSettings.upsert({
+    await prisma.tenant_settingss.upsert({
       where: { tenantId: tenant.id },
       update: {
         currency,

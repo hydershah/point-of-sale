@@ -19,7 +19,7 @@ interface AuditLogData {
 // Create an audit log entry
 export async function createAuditLog(data: AuditLogData): Promise<void> {
   try {
-    await prisma.auditLog.create({
+    await prisma.audit_logs.create({
       data: {
         tenantId: data.tenantId,
         userId: data.userId,
@@ -255,7 +255,7 @@ export async function getAuditLogs(
     }
   }
 
-  return prisma.auditLog.findMany({
+  return prisma.audit_logs.findMany({
     where,
     orderBy: { createdAt: 'desc' },
     take: filters?.limit || 100,

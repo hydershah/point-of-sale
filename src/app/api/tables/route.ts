@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const tables = await prisma.table.findMany({
+    const tables = await prisma.tables.findMany({
       where: { tenantId: tenant.id },
       include: {
         orders: {
@@ -73,12 +73,16 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { name, capacity } = body
 
-    const table = await prisma.table.create({
+    const { nanoid } = await import('nanoid')
+
+    const table = await prisma.tables.create({
       data: {
+        id: nanoid(),
         tenantId: tenant.id,
         name,
         capacity: parseInt(capacity),
         status: "AVAILABLE",
+        updatedAt: new Date(),
       },
     })
 

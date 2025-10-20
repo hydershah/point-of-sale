@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enable standalone output for Docker deployment
+  output: 'standalone',
+
   images: {
     remotePatterns: [
       {
@@ -12,11 +15,20 @@ const nextConfig = {
       },
     ],
   },
+
   experimental: {
     serverActions: {
-      allowedOrigins: ['*.yourdomain.com', 'localhost:3000'],
+      // Get allowed origins from environment or use defaults
+      allowedOrigins: process.env.APP_DOMAIN
+        ? [`*.${process.env.APP_DOMAIN}`, process.env.APP_DOMAIN]
+        : ['*.yourdomain.com', 'localhost:3000'],
     },
   },
+
+  // Disable telemetry in production
+  ...(process.env.NODE_ENV === 'production' && {
+    productionBrowserSourceMaps: false,
+  }),
 }
 
 export default nextConfig

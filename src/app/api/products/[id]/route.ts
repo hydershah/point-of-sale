@@ -16,13 +16,13 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const product = await prisma.product.findFirst({
+    const product = await prisma.products.findFirst({
       where: {
         id: params.id,
         tenantId: tenant.id,
       },
       include: {
-        category: true,
+        categories: true,
       },
     })
 
@@ -61,7 +61,7 @@ export async function PUT(
     const { name, description, price, cost, categoryId, sku, barcode, trackStock, stock, lowStockAlert, image, isActive } = body
 
     // Verify product belongs to this tenant
-    const existingProduct = await prisma.product.findFirst({
+    const existingProduct = await prisma.products.findFirst({
       where: {
         id: params.id,
         tenantId: tenant.id,
@@ -72,14 +72,14 @@ export async function PUT(
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
     }
 
-    const product = await prisma.product.update({
+    const product = await prisma.products.update({
       where: { id: params.id },
       data: {
         name,
         description,
         price: parseFloat(price),
         cost: cost ? parseFloat(cost) : null,
-        categoryId,
+        categoryId: categoryId || null,
         sku,
         barcode,
         trackStock: trackStock || false,
@@ -87,6 +87,7 @@ export async function PUT(
         lowStockAlert: lowStockAlert ? parseInt(lowStockAlert) : null,
         image,
         isActive: isActive !== undefined ? isActive : true,
+        updatedAt: new Date(),
       },
     })
 
@@ -118,7 +119,7 @@ export async function DELETE(
     }
 
     // Verify product belongs to this tenant
-    const existingProduct = await prisma.product.findFirst({
+    const existingProduct = await prisma.products.findFirst({
       where: {
         id: params.id,
         tenantId: tenant.id,
@@ -130,7 +131,7 @@ export async function DELETE(
     }
 
     // Soft delete by setting isActive to false
-    await prisma.product.update({
+    await prisma.products.update({
       where: { id: params.id },
       data: { isActive: false },
     })

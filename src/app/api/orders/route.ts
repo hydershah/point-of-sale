@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get tenant settings for tax calculation
-    const settings = await prisma.tenantSettings.findUnique({
+    const settings = await prisma.tenant_settingss.findUnique({
       where: { tenantId: tenant.id },
     })
 
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     }> = []
 
     for (const item of items) {
-      const product = await prisma.product.findUnique({
+      const product = await prisma.products.findUnique({
         where: { id: item.productId },
       })
 
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     const total = subtotal + tax
 
     // Get next order number for this tenant
-    const lastOrder = await prisma.order.findFirst({
+    const lastOrder = await prisma.orders.findFirst({
       where: { tenantId: tenant.id },
       orderBy: { orderNumber: "desc" },
     })
@@ -198,7 +198,7 @@ export async function GET(req: NextRequest) {
       where.status = status
     }
 
-    const orders = await prisma.order.findMany({
+    const orders = await prisma.orders.findMany({
       where,
       include: {
         items: true,

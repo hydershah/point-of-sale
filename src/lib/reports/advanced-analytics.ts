@@ -47,7 +47,7 @@ export async function getProfitMarginReport(
   tenantId: string,
   dateRange: DateRange
 ): Promise<ProfitMarginReport> {
-  const orders = await prisma.order.findMany({
+  const orders = await prisma.orders.findMany({
     where: {
       tenantId,
       status: OrderStatus.COMPLETED,
@@ -98,7 +98,7 @@ export async function getTopProductsByProfit(
   dateRange: DateRange,
   limit: number = 10
 ): Promise<ProductPerformance[]> {
-  const orderItems = await prisma.orderItem.findMany({
+  const orderItems = await prisma.order_items.findMany({
     where: {
       order: {
         tenantId,
@@ -164,7 +164,7 @@ export async function getSalesTrends(
   dateRange: DateRange,
   interval: 'day' | 'week' | 'month' = 'day'
 ): Promise<SalesTrend[]> {
-  const orders = await prisma.order.findMany({
+  const orders = await prisma.orders.findMany({
     where: {
       tenantId,
       status: OrderStatus.COMPLETED,
@@ -216,7 +216,7 @@ export async function getCategoryPerformance(
   tenantId: string,
   dateRange: DateRange
 ): Promise<CategoryPerformance[]> {
-  const orderItems = await prisma.orderItem.findMany({
+  const orderItems = await prisma.order_items.findMany({
     where: {
       order: {
         tenantId,
@@ -303,7 +303,7 @@ export async function getHourlyAnalysis(
   const endOfDay = new Date(date)
   endOfDay.setHours(23, 59, 59, 999)
 
-  const orders = await prisma.order.findMany({
+  const orders = await prisma.orders.findMany({
     where: {
       tenantId,
       status: OrderStatus.COMPLETED,

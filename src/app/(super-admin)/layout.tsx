@@ -10,6 +10,7 @@ import {
   Settings,
   LogOut,
 } from "lucide-react"
+import { SignOutButton } from "@/components/sign-out-button"
 
 export default async function SuperAdminLayout({
   children,
@@ -59,10 +60,7 @@ export default async function SuperAdminLayout({
         </nav>
 
         <div className="p-4 border-t">
-          <Button variant="outline" className="w-full justify-start">
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
-          </Button>
+          <SignOutButton />
         </div>
       </aside>
 

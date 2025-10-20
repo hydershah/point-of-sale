@@ -106,7 +106,7 @@ export async function getRealtimeSalesMetrics(
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
 
   // Get today's completed orders
-  const todayOrders = await prisma.order.findMany({
+  const todayOrders = await prisma.orders.findMany({
     where: {
       tenantId,
       status: OrderStatus.COMPLETED,
@@ -130,7 +130,7 @@ export async function getRealtimeSalesMetrics(
   const averageOrderValue = todayOrderCount > 0 ? todayRevenue / todayOrderCount : 0
 
   // Get active orders
-  const activeOrders = await prisma.order.count({
+  const activeOrders = await prisma.orders.count({
     where: {
       tenantId,
       status: {
@@ -218,14 +218,14 @@ export async function getSalesComparison(tenantId: string) {
   startOfYesterday.setDate(startOfYesterday.getDate() - 1)
 
   const [todayOrders, yesterdayOrders] = await Promise.all([
-    prisma.order.findMany({
+    prisma.orders.findMany({
       where: {
         tenantId,
         status: OrderStatus.COMPLETED,
         createdAt: { gte: startOfToday },
       },
     }),
-    prisma.order.findMany({
+    prisma.orders.findMany({
       where: {
         tenantId,
         status: OrderStatus.COMPLETED,
@@ -271,7 +271,7 @@ export async function getLiveOrderFeed(
   tenantId: string,
   limit: number = 20
 ) {
-  return prisma.order.findMany({
+  return prisma.orders.findMany({
     where: { tenantId },
     include: {
       items: {
@@ -295,7 +295,7 @@ export async function getCurrentHourPerformance(tenantId: string) {
   const now = new Date()
   const startOfHour = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), 0, 0)
 
-  const orders = await prisma.order.findMany({
+  const orders = await prisma.orders.findMany({
     where: {
       tenantId,
       status: OrderStatus.COMPLETED,

@@ -121,15 +121,15 @@ async function getStats() {
     recentTenants,
     subscriptions,
   ] = await Promise.all([
-    prisma.tenant.count(),
-    prisma.tenant.count({ where: { status: "ACTIVE" } }),
-    prisma.user.count(),
-    prisma.order.count({
+    prisma.tenants.count(),
+    prisma.tenants.count({ where: { status: "ACTIVE" } }),
+    prisma.users.count(),
+    prisma.orders.count({
       where: {
         status: { in: ["PENDING", "PREPARING"] },
       },
     }),
-    prisma.tenant.findMany({
+    prisma.tenants.findMany({
       take: 5,
       orderBy: { createdAt: "desc" },
       select: {
@@ -139,7 +139,7 @@ async function getStats() {
         businessType: true,
       },
     }),
-    prisma.subscription.groupBy({
+    prisma.subscriptions.groupBy({
       by: ["plan"],
       _count: true,
     }),
@@ -164,4 +164,3 @@ async function getStats() {
     totalRevenue,
   }
 }
-

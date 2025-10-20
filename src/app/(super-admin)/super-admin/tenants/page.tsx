@@ -7,9 +7,9 @@ import Link from "next/link"
 import { formatDate } from "@/lib/utils"
 
 export default async function TenantsPage() {
-  const tenants = await prisma.tenant.findMany({
+  const tenants = await prisma.tenants.findMany({
     include: {
-      subscription: true,
+      subscriptions: true,
       _count: {
         select: {
           users: true,
@@ -68,9 +68,9 @@ export default async function TenantsPage() {
                   </div>
                 </div>
                 <div className="text-right">
-                  {tenant.subscription && (
+                  {tenant.subscriptions && (
                     <p className="text-sm font-medium mb-2">
-                      {tenant.subscription.plan} Plan
+                      {tenant.subscriptions.plan} Plan
                     </p>
                   )}
                   <Link href={`/super-admin/tenants/${tenant.id}`}>
@@ -93,4 +93,3 @@ export default async function TenantsPage() {
     </div>
   )
 }
-

@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const customers = await prisma.customer.findMany({
+    const customers = await prisma.customers.findMany({
       where: { tenantId: tenant.id },
       orderBy: { totalSpent: "desc" },
     })
@@ -40,13 +40,17 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { name, email, phone, address } = body
 
-    const customer = await prisma.customer.create({
+    const { nanoid } = await import('nanoid')
+
+    const customer = await prisma.customers.create({
       data: {
+        id: nanoid(),
         tenantId: tenant.id,
         name,
         email,
         phone,
         address,
+        updatedAt: new Date(),
       },
     })
 

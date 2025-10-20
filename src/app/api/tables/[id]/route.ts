@@ -20,7 +20,7 @@ export async function PUT(
     const { name, capacity, status } = body
 
     // Verify table belongs to this tenant
-    const existingTable = await prisma.table.findFirst({
+    const existingTable = await prisma.tables.findFirst({
       where: {
         id: params.id,
         tenantId: tenant.id,
@@ -31,7 +31,7 @@ export async function PUT(
       return NextResponse.json({ error: "Table not found" }, { status: 404 })
     }
 
-    const table = await prisma.table.update({
+    const table = await prisma.tables.update({
       where: { id: params.id },
       data: {
         name,
@@ -68,7 +68,7 @@ export async function DELETE(
     }
 
     // Verify table belongs to this tenant
-    const existingTable = await prisma.table.findFirst({
+    const existingTable = await prisma.tables.findFirst({
       where: {
         id: params.id,
         tenantId: tenant.id,
@@ -79,7 +79,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Table not found" }, { status: 404 })
     }
 
-    await prisma.table.delete({
+    await prisma.tables.delete({
       where: { id: params.id },
     })
 

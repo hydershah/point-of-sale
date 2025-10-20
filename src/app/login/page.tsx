@@ -39,8 +39,17 @@ export default function LoginPage() {
           title: "Success",
           description: "Logged in successfully",
         })
-        // Force a hard redirect to dashboard
-        window.location.href = "/dashboard"
+
+        // Fetch session to determine user role
+        const response = await fetch("/api/auth/session")
+        const session = await response.json()
+
+        // Redirect based on user role
+        if (session?.user?.role === "SUPER_ADMIN") {
+          window.location.href = "/super-admin/dashboard"
+        } else {
+          window.location.href = "/dashboard"
+        }
       }
     } catch (error) {
       console.error("Login error:", error)

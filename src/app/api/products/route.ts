@@ -13,13 +13,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const products = await prisma.product.findMany({
+    const products = await prisma.products.findMany({
       where: {
         tenantId: tenant.id,
         isActive: true,
       },
       include: {
-        category: {
+        categories: {
           select: {
             name: true,
           },
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
       id: p.id,
       name: p.name,
       price: p.price,
-      category: p.category?.name || "Uncategorized",
+      category: p.categories?.name || "Uncategorized",
       image: p.image,
       stock: p.stock,
       trackStock: p.trackStock,
@@ -66,22 +66,28 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { name, description, price, cost, categoryId, sku, barcode, trackStock, stock, image } = body
+    const { name, description, price, cost, categoryId, sku, barcode, trackStock, stock, image, lowStockAlert } = body
 
-    const product = await prisma.product.create({
+    // Import nanoid at the top of the file
+    const { nanoid } = await import('nanoid')
+
+    const product = await prisma.products.create({
       data: {
+        id: nanoid(),
         tenantId: tenant.id,
         name,
         description,
         price: parseFloat(price),
         cost: cost ? parseFloat(cost) : null,
-        categoryId,
+        categoryId: categoryId || null,
         sku,
         barcode,
         trackStock: trackStock || false,
         stock: trackStock ? parseInt(stock) || 0 : 0,
+        lowStockAlert: lowStockAlert ? parseInt(lowStockAlert) : null,
         image,
         createdById: session.user.id,
+        updatedAt: new Date(),
       },
     })
 

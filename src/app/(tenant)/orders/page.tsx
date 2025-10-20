@@ -5,8 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, Printer, Eye } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { Search, Printer, Eye, XCircle } from "lucide-react"
 import { formatCurrency, formatDateTime } from "@/lib/utils"
+import { useToast } from "@/components/ui/use-toast"
 
 interface Order {
   id: string
@@ -32,6 +34,11 @@ export default function OrdersPage() {
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("ALL")
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [cancellationReason, setCancellationReason] = useState("")
+  const [isCancelling, setIsCancelling] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
     loadOrders()
@@ -64,6 +71,55 @@ export default function OrdersPage() {
       setFilteredOrders(data.orders || [])
     } catch (error) {
       console.error("Failed to load orders:", error)
+    }
+  }
+
+  const handleCancelOrder = (order: Order) => {
+    setSelectedOrder(order)
+    setCancellationReason("")
+    setCancelDialogOpen(true)
+  }
+
+  const confirmCancelOrder = async () => {
+    if (!selectedOrder) return
+
+    setIsCancelling(true)
+    try {
+      const response = await fetch(`/api/orders/${selectedOrder.id}/cancel`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          reason: cancellationReason,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to cancel order")
+      }
+
+      toast({
+        title: "Order cancelled",
+        description: `Order #${selectedOrder.orderNumber} has been cancelled successfully.`,
+      })
+
+      // Reload orders
+      await loadOrders()
+      setCancelDialogOpen(false)
+      setSelectedOrder(null)
+      setCancellationReason("")
+    } catch (error) {
+      console.error("Failed to cancel order:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to cancel order",
+        variant: "destructive",
+      })
+    } finally {
+      setIsCancelling(false)
     }
   }
 
@@ -157,6 +213,17 @@ export default function OrdersPage() {
                       <Printer className="mr-2 h-4 w-4" />
                       Reprint
                     </Button>
+                    {order.status === "COMPLETED" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleCancelOrder(order)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Cancel
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -170,6 +237,53 @@ export default function OrdersPage() {
           </div>
         </CardContent>
       </Card>
+
+      {cancelDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader>
+              <CardTitle>Cancel Order</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {selectedOrder &&
+                  `Are you sure you want to cancel Order #${selectedOrder.orderNumber}? This will refund the payment and restore inventory.`}
+              </p>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Cancellation Reason (Optional)
+                </label>
+                <Textarea
+                  placeholder="Enter reason for cancellation..."
+                  value={cancellationReason}
+                  onChange={(e) => setCancellationReason(e.target.value)}
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setCancelDialogOpen(false)
+                    setSelectedOrder(null)
+                    setCancellationReason("")
+                  }}
+                  disabled={isCancelling}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={confirmCancelOrder}
+                  disabled={isCancelling}
+                >
+                  {isCancelling ? "Cancelling..." : "Confirm Cancellation"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

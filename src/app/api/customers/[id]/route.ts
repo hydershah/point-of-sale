@@ -16,7 +16,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const customer = await prisma.customer.findFirst({
+    const customer = await prisma.customers.findFirst({
       where: {
         id: params.id,
         tenantId: tenant.id,
@@ -64,7 +64,7 @@ export async function PUT(
     const { name, email, phone, address, notes } = body
 
     // Verify customer belongs to this tenant
-    const existingCustomer = await prisma.customer.findFirst({
+    const existingCustomer = await prisma.customers.findFirst({
       where: {
         id: params.id,
         tenantId: tenant.id,
@@ -75,7 +75,7 @@ export async function PUT(
       return NextResponse.json({ error: "Customer not found" }, { status: 404 })
     }
 
-    const customer = await prisma.customer.update({
+    const customer = await prisma.customers.update({
       where: { id: params.id },
       data: {
         name,
@@ -114,7 +114,7 @@ export async function DELETE(
     }
 
     // Verify customer belongs to this tenant
-    const existingCustomer = await prisma.customer.findFirst({
+    const existingCustomer = await prisma.customers.findFirst({
       where: {
         id: params.id,
         tenantId: tenant.id,
@@ -125,7 +125,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Customer not found" }, { status: 404 })
     }
 
-    await prisma.customer.delete({
+    await prisma.customers.delete({
       where: { id: params.id },
     })
 

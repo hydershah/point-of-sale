@@ -1,38 +1,38 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { uploadBase64ToS3, validateImage } from '@/lib/s3-upload'
+import { NextRequest, NextResponse } from "next/server"
+import { promises as fs } from "fs"
+import path from "path"
+import { randomUUID } from "crypto"
+
+const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "logos")
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session || session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     const { image } = await req.json()
 
-    if (!image) {
-      return NextResponse.json({ error: 'No image provided' }, { status: 400 })
+    if (!image || typeof image !== "string") {
+      return NextResponse.json({ error: "No image provided" }, { status: 400 })
     }
 
-    // Validate image
-    const validation = validateImage(image)
-    if (!validation.valid) {
-      return NextResponse.json({ error: validation.error }, { status: 400 })
+    const matches = image.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/)
+    if (!matches) {
+      return NextResponse.json({ error: "Invalid image format" }, { status: 400 })
     }
 
-    // Upload to S3
-    const result = await uploadBase64ToS3(image, 'tenant-logos')
+    const mimeType = matches[1]
+    const base64Data = matches[2]
 
-    return NextResponse.json({
-      success: true,
-      url: result.url,
-      key: result.key,
-    })
+    const extension = mimeType.split("/")[1].replace("+xml", "")
+    const fileName = `${randomUUID()}.${extension}`
+
+    await fs.mkdir(UPLOAD_DIR, { recursive: true })
+    const filePath = path.join(UPLOAD_DIR, fileName)
+    await fs.writeFile(filePath, Buffer.from(base64Data, "base64"))
+
+    const publicPath = `/uploads/logos/${fileName}`
+
+    return NextResponse.json({ url: publicPath })
   } catch (error) {
-    console.error('Error uploading logo:', error)
-    return NextResponse.json({ error: 'Failed to upload logo' }, { status: 500 })
+    console.error("Logo upload failed:", error)
+    return NextResponse.json({ error: "Failed to upload logo" }, { status: 500 })
   }
 }

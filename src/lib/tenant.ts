@@ -62,7 +62,7 @@ export function isSuperAdminRequest(): boolean {
  */
 export const getTenantBySubdomain = cache(async (subdomain: string): Promise<TenantContext | null> => {
   try {
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await prisma.tenants.findUnique({
       where: { subdomain },
       select: {
         id: true,
@@ -72,16 +72,16 @@ export const getTenantBySubdomain = cache(async (subdomain: string): Promise<Ten
         businessType: true,
       },
     })
-    
+
     if (!tenant) {
       return null
     }
-    
+
     // Check if tenant is active
     if (tenant.status !== 'ACTIVE' && tenant.status !== 'TRIAL') {
       return null
     }
-    
+
     return tenant
   } catch (error) {
     console.error('Error fetching tenant:', error)

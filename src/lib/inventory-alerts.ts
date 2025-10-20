@@ -8,7 +8,7 @@ export async function checkInventoryLevel(
   productId: string
 ): Promise<void> {
   try {
-    const product = await prisma.product.findUnique({
+    const product = await prisma.products.findUnique({
       where: { id: productId },
       select: {
         id: true,
@@ -26,7 +26,7 @@ export async function checkInventoryLevel(
     // Check if stock is below threshold
     if (product.stock <= product.lowStockAlert) {
       // Check if alert already exists and is pending
-      const existingAlert = await prisma.inventoryAlert.findFirst({
+      const existingAlert = await prisma.inventory_alerts.findFirst({
         where: {
           tenantId,
           productId,
@@ -36,7 +36,7 @@ export async function checkInventoryLevel(
 
       if (!existingAlert) {
         // Create new alert
-        await prisma.inventoryAlert.create({
+        await prisma.inventory_alerts.create({
           data: {
             tenantId,
             productId,
@@ -51,14 +51,14 @@ export async function checkInventoryLevel(
         console.log(`Low stock alert created for ${product.name}`)
       } else {
         // Update existing alert with new stock level
-        await prisma.inventoryAlert.update({
+        await prisma.inventory_alerts.update({
           where: { id: existingAlert.id },
           data: { currentStock: product.stock },
         })
       }
     } else {
       // Stock is above threshold, resolve any pending alerts
-      await prisma.inventoryAlert.updateMany({
+      await prisma.inventory_alerts.updateMany({
         where: {
           tenantId,
           productId,
@@ -78,7 +78,7 @@ export async function checkInventoryLevel(
 // Check all products for low stock
 export async function checkAllInventoryLevels(tenantId: string): Promise<void> {
   try {
-    const products = await prisma.product.findMany({
+    const products = await prisma.products.findMany({
       where: {
         tenantId,
         trackStock: true,
@@ -102,7 +102,7 @@ export async function checkAllInventoryLevels(tenantId: string): Promise<void> {
 
 // Get pending alerts for tenant
 export async function getPendingAlerts(tenantId: string) {
-  return prisma.inventoryAlert.findMany({
+  return prisma.inventory_alerts.findMany({
     where: {
       tenantId,
       status: AlertStatus.PENDING,
@@ -130,7 +130,7 @@ export async function getInventoryAlerts(
     where.productId = filters.productId
   }
 
-  return prisma.inventoryAlert.findMany({
+  return prisma.inventory_alerts.findMany({
     where,
     orderBy: { createdAt: 'desc' },
     take: filters?.limit || 50,
@@ -143,7 +143,7 @@ export async function acknowledgeAlert(
   userId: string,
   userName: string
 ): Promise<void> {
-  await prisma.inventoryAlert.update({
+  await prisma.inventory_alerts.update({
     where: { id: alertId },
     data: {
       status: AlertStatus.ACKNOWLEDGED,
@@ -155,7 +155,7 @@ export async function acknowledgeAlert(
 
 // Resolve an alert
 export async function resolveAlert(alertId: string): Promise<void> {
-  await prisma.inventoryAlert.update({
+  await prisma.inventory_alerts.update({
     where: { id: alertId },
     data: {
       status: AlertStatus.RESOLVED,
@@ -167,16 +167,16 @@ export async function resolveAlert(alertId: string): Promise<void> {
 // Get alert statistics
 export async function getAlertStatistics(tenantId: string) {
   const [pending, acknowledged, resolved, total] = await Promise.all([
-    prisma.inventoryAlert.count({
+    prisma.inventory_alerts.count({
       where: { tenantId, status: AlertStatus.PENDING },
     }),
-    prisma.inventoryAlert.count({
+    prisma.inventory_alerts.count({
       where: { tenantId, status: AlertStatus.ACKNOWLEDGED },
     }),
-    prisma.inventoryAlert.count({
+    prisma.inventory_alerts.count({
       where: { tenantId, status: AlertStatus.RESOLVED },
     }),
-    prisma.inventoryAlert.count({ where: { tenantId } }),
+    prisma.inventory_alerts.count({ where: { tenantId } }),
   ])
 
   return {
@@ -189,7 +189,7 @@ export async function getAlertStatistics(tenantId: string) {
 
 // Get critical products (very low stock)
 export async function getCriticalProducts(tenantId: string) {
-  const products = await prisma.product.findMany({
+  const products = await prisma.products.findMany({
     where: {
       tenantId,
       trackStock: true,
@@ -224,13 +224,13 @@ export async function handleStockUpdate(
 
   // If stock increased significantly, resolve pending alerts
   if (newStock > oldStock) {
-    const product = await prisma.product.findUnique({
+    const product = await prisma.products.findUnique({
       where: { id: productId },
       select: { lowStockAlert: true },
     })
 
     if (product?.lowStockAlert && newStock > product.lowStockAlert) {
-      await prisma.inventoryAlert.updateMany({
+      await prisma.inventory_alerts.updateMany({
         where: {
           tenantId,
           productId,

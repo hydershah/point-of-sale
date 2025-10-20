@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     } = body
 
     // Check if subdomain is already taken
-    const existingTenant = await prisma.tenant.findUnique({
+    const existingTenant = await prisma.tenants.findUnique({
       where: { subdomain },
     })
 
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create subscription (trial by default)
-    const subscription = await prisma.subscription.create({
+    const subscription = await prisma.subscriptions.create({
       data: {
         plan: "BASIC",
         status: "TRIALING",
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     })
 
     // Create tenant
-    const tenant = await prisma.tenant.create({
+    const tenant = await prisma.tenants.create({
       data: {
         name,
         subdomain,
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
 
     // Create admin user
     const hashedPassword = await bcrypt.hash(adminPassword, 10)
-    const adminUser = await prisma.user.create({
+    const adminUser = await prisma.users.create({
       data: {
         email: adminEmail,
         password: hashedPassword,
@@ -122,7 +122,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const tenants = await prisma.tenant.findMany({
+    const tenants = await prisma.tenants.findMany({
       include: {
         subscription: true,
         _count: {
@@ -145,4 +145,3 @@ export async function GET(req: NextRequest) {
     )
   }
 }
-

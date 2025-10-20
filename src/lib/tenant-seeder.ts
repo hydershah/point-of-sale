@@ -246,7 +246,7 @@ export async function seedTenantInventory(tenantId: string, businessType: Busine
   let sortOrder = 0
   for (const [categoryName, products] of categoriesMap) {
     // Create category
-    const category = await prisma.category.create({
+    const category = await prisma.categories.create({
       data: {
         tenantId,
         name: categoryName,
@@ -257,7 +257,7 @@ export async function seedTenantInventory(tenantId: string, businessType: Busine
 
     // Create products for this category
     for (const product of products) {
-      await prisma.product.create({
+      await prisma.products.create({
         data: {
           tenantId,
           name: product.name,
@@ -303,7 +303,7 @@ export async function seedTenantTables(tenantId: string, businessType: BusinessT
     })
   }
 
-  await prisma.table.createMany({
+  await prisma.tables.createMany({
     data: tables,
   })
 
@@ -344,7 +344,7 @@ export async function seedSampleCustomers(tenantId: string) {
     },
   ]
 
-  await prisma.customer.createMany({
+  await prisma.customers.createMany({
     data: customers,
   })
 
