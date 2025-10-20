@@ -1,0 +1,1035 @@
+// Multi-Tenant POS System Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// SUPER ADMIN & PLATFORM MANAGEMENT
+// ============================================
+
+model SuperAdmin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("super_admins")
+}
+
+// ============================================
+// TENANT MANAGEMENT
+// ============================================
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  TRIAL
+  CANCELLED
+}
+
+enum BusinessType {
+  RETAIL
+  RESTAURANT
+  COFFEE_SHOP
+  TAKEAWAY
+  MIXED
+}
+
+model Tenant {
+  id        String       @id @default(cuid())
+  name      String
+  subdomain String       @unique
+  status    TenantStatus @default(TRIAL)
+  businessType BusinessType @default(RETAIL)
+  
+  // Contact info
+  email     String
+  phone     String?
+  address   String?
+  
+  // Branding
+  logo      String?
+  primaryColor String?
+  
+  // Subscription
+  subscriptionId String?   @unique
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  users         User[]
+  settings      TenantSettings?
+  products      Product[]
+  categories    Category[]
+  orders        Order[]
+  customers     Customer[]
+  tables        Table[]
+  shifts        Shift[]
+  transactions  Transaction[]
+  discounts     Discount[]
+  receipts      Receipt[]
+
+  locations     Location[]
+  auditLogs     AuditLog[]
+  inventoryAlerts InventoryAlert[]
+
+  @@map("tenants")
+  @@index([subdomain])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model TenantSettings {
+  id       String @id @default(cuid())
+  tenantId String @unique
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Business Settings
+  currency           String  @default("USD")
+  currencySymbol     String  @default("$")
+  timezone           String  @default("UTC")
+  taxRate            Float   @default(0)
+  taxName            String  @default("Tax")
+  
+  // Receipt Settings
+  receiptFooter      String?
+  receiptHeader      String?
+  printAutomatic     Boolean @default(false)
+  
+  // Hardware Settings
+  printerIp          String?
+  printerPort        Int?
+  cashdrawerEnabled  Boolean @default(false)
+  
+  // Feature Flags (based on subscription)
+  enableKitchenDisplay Boolean @default(false)
+  enableInventory      Boolean @default(true)
+  enableTables         Boolean @default(false)
+  enableTakeaway       Boolean @default(false)
+  enableLoyalty        Boolean @default(false)
+  
+  // Business Hours (JSON)
+  businessHours      Json?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("tenant_settings")
+}
+
+// ============================================
+// SUBSCRIPTION & BILLING
+// ============================================
+
+enum SubscriptionPlan {
+  BASIC
+  PRO
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  TRIALING
+}
+
+model Subscription {
+  id              String             @id @default(cuid())
+  plan            SubscriptionPlan   @default(BASIC)
+  status          SubscriptionStatus @default(TRIALING)
+  
+  // Stripe Integration
+  stripeCustomerId       String?  @unique
+  stripeSubscriptionId   String?  @unique
+  stripePriceId          String?
+  stripeCurrentPeriodEnd DateTime?
+  
+  // Pricing
+  amount          Float
+  currency        String  @default("USD")
+  interval        String  @default("month") // month or year
+  
+  // Limits
+  maxUsers        Int     @default(5)
+  maxLocations    Int     @default(1)
+  
+  // Trial
+  trialEnds       DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  tenant    Tenant?
+
+  @@map("subscriptions")
+}
+
+// ============================================
+// USER MANAGEMENT
+// ============================================
+
+enum UserRole {
+  BUSINESS_ADMIN
+  MANAGER
+  CASHIER
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String
+  password  String
+  name      String
+  role      UserRole @default(CASHIER)
+  
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // User Settings
+  avatar    String?
+  phone     String?
+  isActive  Boolean  @default(true)
+  
+  // Permissions (JSON for granular control)
+  permissions Json?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  shifts    Shift[]
+  orders    Order[]
+  createdProducts Product[] @relation("ProductCreatedBy")
+  
+  @@unique([email, tenantId])
+  timeEntries TimeEntry[]
+
+  @@map("users")
+  @@index([tenantId])
+  @@index([email])
+  @@index([tenantId, createdAt])
+  @@index([role])
+}
+
+model UserInvitation {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  role      UserRole
+  tenantId  String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("user_invitations")
+  @@index([token])
+}
+
+// ============================================
+// PRODUCT MANAGEMENT
+// ============================================
+
+model Category {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?
+  parentId    String?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  
+  // Display settings
+  color       String?
+  icon        String?
+  sortOrder   Int       @default(0)
+  
+  products    Product[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("categories")
+  @@index([tenantId])
+  @@index([parentId])
+  @@index([tenantId, sortOrder])
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Basic Info
+  name        String
+  description String?
+  sku         String?
+  barcode     String?
+  
+  // Pricing
+  price       Float
+  cost        Float?
+  taxable     Boolean  @default(true)
+  
+  // Category
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  
+  // Inventory
+  trackStock  Boolean  @default(false)
+  stock       Int      @default(0)
+  lowStockAlert Int?
+  
+  // Product Image
+  image       String?
+  
+  // Modifiers (JSON array for size, toppings, etc.)
+  modifiers   Json?
+  
+  // Availability
+  isActive    Boolean  @default(true)
+  isFavorite  Boolean  @default(false)
+  
+  // Metadata
+  createdById String
+  createdBy   User     @relation("ProductCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  orderItems  OrderItem[]
+
+  @@map("products")
+  @@index([tenantId])
+  @@index([categoryId])
+  @@index([barcode])
+  @@index([sku])
+  @@index([tenantId, isActive])
+  @@index([tenantId, categoryId])
+  @@index([trackStock, stock])
+}
+
+// ============================================
+// CUSTOMER MANAGEMENT
+// ============================================
+
+model Customer {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Basic Info
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  
+  // Loyalty
+  loyaltyPoints Int   @default(0)
+  totalSpent    Float @default(0)
+  visitCount    Int   @default(0)
+  
+  // Metadata
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  orders    Order[]
+
+  @@map("customers")
+  @@index([tenantId])
+  @@index([phone])
+  @@index([email])
+  @@index([tenantId, loyaltyPoints])
+  @@index([tenantId, totalSpent])
+}
+
+// ============================================
+// ORDER MANAGEMENT
+// ============================================
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderType {
+  DINE_IN
+  TAKEAWAY
+  DELIVERY
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  tenantId    String
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Order Identification
+  orderNumber Int
+  ticketId    String      @unique
+  
+  // Order Details
+  type        OrderType   @default(DINE_IN)
+  status      OrderStatus @default(PENDING)
+  
+  // Customer
+  customerId  String?
+  customer    Customer?   @relation(fields: [customerId], references: [id])
+  customerName String?
+  
+  // Table (for restaurants)
+  tableId     String?
+  table       Table?      @relation(fields: [tableId], references: [id])
+  
+  // Cashier
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  
+  // Financial
+  subtotal    Float
+  tax         Float
+  discount    Float       @default(0)
+  total       Float
+  
+  // Discount Applied
+  discountId  String?
+  appliedDiscount Discount? @relation(fields: [discountId], references: [id])
+  
+  // Special Instructions
+  notes       String?
+  
+  // Timestamps
+  createdAt   DateTime    @default(now())
+  completedAt DateTime?
+  updatedAt   DateTime    @updatedAt
+  
+  // Relations
+  items       OrderItem[]
+  payments    Payment[]
+  receipt     Receipt?
+
+  tips        Tip[]
+
+  @@map("orders")
+  @@index([tenantId])
+  @@index([orderNumber, tenantId])
+  @@index([ticketId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, status])
+  @@index([userId, createdAt])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  
+  // Item Details
+  name      String  // Snapshot of product name
+  price     Float   // Snapshot of price
+  quantity  Int
+  
+  // Modifiers/Customizations (JSON)
+  modifiers Json?
+  
+  // Special notes for this item
+  notes     String?
+  
+  subtotal  Float
+
+  @@map("order_items")
+  @@index([orderId])
+  @@index([productId])
+}
+
+// ============================================
+// PAYMENT MANAGEMENT
+// ============================================
+
+enum PaymentMethod {
+  CASH
+  CARD
+  DIGITAL_WALLET
+  OTHER
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  orderId   String
+  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  method    PaymentMethod
+  amount    Float
+  
+  // For split payments
+  reference String?
+  
+  // Change given (for cash)
+  tendered  Float?
+  change    Float?
+  
+  createdAt DateTime      @default(now())
+
+  @@map("payments")
+  @@index([orderId])
+  @@index([method])
+  @@index([createdAt])
+}
+
+// ============================================
+// RECEIPT MANAGEMENT
+// ============================================
+
+model Receipt {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  // Receipt Content (stored for reprints)
+  content   String
+  
+  // Print History
+  printCount Int     @default(0)
+  lastPrinted DateTime?
+  
+  createdAt DateTime @default(now())
+
+  @@map("receipts")
+  @@index([tenantId])
+  @@index([tenantId, createdAt])
+}
+
+// ============================================
+// RESTAURANT FEATURES
+// ============================================
+
+enum TableStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+}
+
+model Table {
+  id        String      @id @default(cuid())
+  tenantId  String
+  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Table Info
+  name      String
+  capacity  Int
+  status    TableStatus @default(AVAILABLE)
+  
+  // Floor Plan Position
+  positionX Float?
+  positionY Float?
+  
+  // Active orders
+  orders    Order[]
+  
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@map("tables")
+  @@index([tenantId])
+  @@index([status])
+}
+
+// ============================================
+// SHIFT MANAGEMENT
+// ============================================
+
+model Shift {
+  id           String    @id @default(cuid())
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  
+  // Shift Details
+  startTime    DateTime  @default(now())
+  endTime      DateTime?
+  
+  // Cash Management
+  openingCash  Float
+  closingCash  Float?
+  expectedCash Float?
+  difference   Float?
+  
+  // Sales Summary
+  totalSales   Float?
+  orderCount   Int?
+  
+  // Notes
+  notes        String?
+  
+  createdAt    DateTime  @default(now())
+
+  @@map("shifts")
+  @@index([tenantId])
+  @@index([userId])
+  @@index([tenantId, startTime])
+  @@index([userId, startTime])
+}
+
+// ============================================
+// ACCOUNTING & LEDGER
+// ============================================
+
+enum TransactionType {
+  SALE
+  REFUND
+  EXPENSE
+  ADJUSTMENT
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  tenantId    String
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  type        TransactionType
+  amount      Float
+  description String
+  
+  // Reference
+  referenceId String?
+  referenceType String?
+  
+  // Metadata
+  metadata    Json?
+  createdAt   DateTime        @default(now())
+
+  @@map("transactions")
+  @@index([tenantId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// ============================================
+// DISCOUNTS & PROMOTIONS
+// ============================================
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  COUPON
+}
+
+model Discount {
+  id          String       @id @default(cuid())
+  tenantId    String
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  name        String
+  code        String?
+  type        DiscountType
+  value       Float
+  
+  // Conditions
+  minimumPurchase Float?
+  maxUses     Int?
+  usedCount   Int          @default(0)
+  
+  // Validity
+  isActive    Boolean      @default(true)
+  startDate   DateTime?
+  endDate     DateTime?
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  // Relations
+  orders      Order[]
+
+  @@map("discounts")
+  @@index([tenantId])
+  @@index([code])
+  @@index([isActive])
+  @@index([tenantId, isActive])
+}
+
+// ============================================
+// MULTI-LOCATION SUPPORT
+// ============================================
+
+model Location {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name      String
+  address   String
+  city      String?
+  state     String?
+  country   String   @default("USA")
+  zipCode   String?
+
+  phone     String?
+  email     String?
+
+  // Manager
+  managerId String?
+
+  // Operating Status
+  isActive  Boolean  @default(true)
+
+  // Business Hours (JSON)
+  businessHours Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("locations")
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+}
+
+// ============================================
+// AUDIT LOGGING
+// ============================================
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  PAYMENT
+  REFUND
+}
+
+model AuditLog {
+  id          String      @id @default(cuid())
+  tenantId    String
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Who performed the action
+  userId      String?
+  userEmail   String?
+  userName    String?
+
+  // What action was performed
+  action      AuditAction
+  entity      String      // e.g., "Product", "Order", "User"
+  entityId    String?
+
+  // Details of the change
+  description String
+  metadata    Json?       // Before/after values
+
+  // Request info
+  ipAddress   String?
+  userAgent   String?
+
+  createdAt   DateTime    @default(now())
+
+  @@map("audit_logs")
+  @@index([tenantId])
+  @@index([tenantId, createdAt])
+  @@index([userId])
+  @@index([action])
+  @@index([entity, entityId])
+}
+
+// ============================================
+// INVENTORY ALERTS
+// ============================================
+
+enum AlertStatus {
+  PENDING
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+model InventoryAlert {
+  id          String      @id @default(cuid())
+  tenantId    String
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  productId   String
+  productName String
+
+  currentStock Int
+  threshold    Int
+
+  status      AlertStatus @default(PENDING)
+
+  acknowledgedBy String?
+  acknowledgedAt DateTime?
+
+  resolvedAt  DateTime?
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("inventory_alerts")
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([productId])
+  @@index([status])
+}
+
+// ============================================
+// TIME TRACKING
+// ============================================
+
+enum TimeEntryType {
+  CLOCK_IN
+  CLOCK_OUT
+  BREAK_START
+  BREAK_END
+}
+
+model TimeEntry {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type      TimeEntryType
+  timestamp DateTime      @default(now())
+
+  // Location tracking
+  locationId String?
+
+  // Notes
+  notes     String?
+
+  // Metadata
+  ipAddress String?
+
+  createdAt DateTime      @default(now())
+
+  @@map("time_entries")
+  @@index([userId])
+  @@index([userId, timestamp])
+  @@index([type])
+}
+
+// ============================================
+// TIP MANAGEMENT
+// ============================================
+
+model Tip {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  amount    Float
+  method    PaymentMethod @default(CASH)
+
+  // Tip splitting
+  splits    TipSplit[]
+
+  createdAt DateTime @default(now())
+
+  @@map("tips")
+  @@index([orderId])
+}
+
+model TipSplit {
+  id        String   @id @default(cuid())
+  tipId     String
+  tip       Tip      @relation(fields: [tipId], references: [id], onDelete: Cascade)
+
+  userId    String
+  userName  String
+  amount    Float
+  percentage Float?
+
+  createdAt DateTime @default(now())
+
+  @@map("tip_splits")
+  @@index([tipId])
+  @@index([userId])
+}
+
+// ============================================
+// QR CODE ORDERING
+// ============================================
+
+enum QROrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+model QROrder {
+  id          String        @id @default(cuid())
+  tenantId    String
+
+  // QR Code / Table Reference
+  tableId     String?
+  qrCode      String        @unique
+
+  // Customer Info (optional)
+  customerName  String?
+  customerPhone String?
+
+  // Order Items (JSON for simplicity)
+  items       Json
+
+  subtotal    Float
+  tax         Float
+  total       Float
+
+  status      QROrderStatus @default(PENDING)
+
+  // Payment
+  paid        Boolean       @default(false)
+  paymentMethod PaymentMethod?
+
+  // Special Instructions
+  notes       String?
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("qr_orders")
+  @@index([tenantId])
+  @@index([qrCode])
+  @@index([status])
+  @@index([tenantId, createdAt])
+}
+
+// ============================================
+// CUSTOMER ANALYTICS
+// ============================================
+
+model CustomerAnalytics {
+  id              String   @id @default(cuid())
+  customerId      String   @unique
+  tenantId        String
+
+  // RFM Analysis
+  recencyScore    Int      // 1-5, last purchase date
+  frequencyScore  Int      // 1-5, purchase frequency
+  monetaryScore   Int      // 1-5, total spend
+  rfmSegment      String   // e.g., "Champions", "At Risk", "Lost"
+
+  // Behavioral Data
+  avgOrderValue   Float    @default(0)
+  lastPurchaseDate DateTime?
+  daysSinceLastPurchase Int?
+
+  // Preferences
+  favoriteProducts Json?
+  preferredPaymentMethod String?
+  avgVisitDuration Int?   // in minutes
+
+  // Predictions
+  churnRisk       Float?   // 0-1 probability
+  nextPurchasePrediction DateTime?
+  lifetimeValue   Float?
+
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+
+  @@map("customer_analytics")
+  @@index([tenantId])
+  @@index([rfmSegment])
+  @@index([churnRisk])
+}
+
+// ============================================
+// INVENTORY FORECASTING
+// ============================================
+
+model InventoryForecast {
+  id              String   @id @default(cuid())
+  tenantId        String
+  productId       String
+  productName     String
+
+  // Forecast Data
+  forecastDate    DateTime
+  predictedDemand Float
+  confidence      Float    // 0-1
+
+  // Historical Average
+  avgDailySales   Float
+  trend           String   // "increasing", "decreasing", "stable"
+
+  // Recommendations
+  recommendedStock Int
+  reorderPoint     Int?
+
+  // Metadata
+  modelVersion    String?
+  metadata        Json?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("inventory_forecasts")
+  @@index([tenantId])
+  @@index([productId])
+  @@index([tenantId, forecastDate])
+}
+
+// ============================================
+// EMPLOYEE PERFORMANCE
+// ============================================
+
+model EmployeePerformance {
+  id              String   @id @default(cuid())
+  userId          String
+  tenantId        String
+
+  // Time Period
+  periodStart     DateTime
+  periodEnd       DateTime
+
+  // Sales Metrics
+  totalSales      Float    @default(0)
+  orderCount      Int      @default(0)
+  avgOrderValue   Float    @default(0)
+
+  // Efficiency
+  avgCheckoutTime Float?   // in seconds
+  itemsPerOrder   Float?
+
+  // Customer Service
+  refundCount     Int      @default(0)
+  discountGiven   Float    @default(0)
+
+  // Hours Worked
+  hoursWorked     Float?
+  salesPerHour    Float?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("employee_performance")
+  @@index([userId])
+  @@index([tenantId])
+  @@index([tenantId, periodStart])
+  @@index([userId, periodStart])
+}
+
