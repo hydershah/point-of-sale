@@ -13,6 +13,9 @@ import { EmptyState } from "@/components/empty-state"
 import { ConfirmationDialog } from "@/components/confirmation-dialog"
 import { ErrorState } from "@/components/error-state"
 import { cn } from "@/lib/utils"
+import { useFeature } from "@/hooks/use-features"
+import { FeatureGate } from "@/components/feature-gate"
+import Link from "next/link"
 
 interface Product {
   id: string
@@ -44,6 +47,8 @@ export default function POSPage() {
   const [addedToCartId, setAddedToCartId] = useState<string | null>(null)
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false)
   const { toast } = useToast()
+  const canCash = useFeature('enable_cash_payments')
+  const canCard = useFeature('enable_card_payments')
 
   const loadProducts = useCallback(async () => {
     setIsLoadingProducts(true)
@@ -244,6 +249,26 @@ export default function POSPage() {
   }
 
   return (
+    <FeatureGate
+      feature="enable_pos_interface"
+      fallback={
+        <div className="p-8">
+          <Card className="max-w-2xl">
+            <CardHeader>
+              <CardTitle>POS Unavailable</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                The POS interface is disabled for your tenant. Enable it in Feature Settings to take orders.
+              </p>
+              <Button asChild>
+                <Link href="/settings/features">Go to Feature Settings</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
     <>
       <div className="flex flex-col lg:flex-row h-screen bg-gray-100">
         {/* Products Section */}
@@ -473,6 +498,7 @@ export default function POSPage() {
         variant="default"
       />
     </>
+    </FeatureGate>
   )
 
   function CartContent() {
@@ -554,27 +580,31 @@ export default function POSPage() {
             </div>
 
             <div className="space-y-2">
-              <Button
-                className="w-full"
-                size="lg"
-                onClick={() => openCheckoutDialog("CASH")}
-                disabled={loading}
-                aria-label="Pay with cash"
-              >
-                <DollarSign className="mr-2 h-5 w-5" />
-                Pay with Cash
-              </Button>
-              <Button
-                className="w-full"
-                size="lg"
-                variant="outline"
-                onClick={() => openCheckoutDialog("CARD")}
-                disabled={loading}
-                aria-label="Pay with card"
-              >
-                <CreditCard className="mr-2 h-5 w-5" />
-                Pay with Card
-              </Button>
+              {canCash && (
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={() => openCheckoutDialog("CASH")}
+                  disabled={loading}
+                  aria-label="Pay with cash"
+                >
+                  <DollarSign className="mr-2 h-5 w-5" />
+                  Pay with Cash
+                </Button>
+              )}
+              {canCard && (
+                <Button
+                  className="w-full"
+                  size="lg"
+                  variant="outline"
+                  onClick={() => openCheckoutDialog("CARD")}
+                  disabled={loading}
+                  aria-label="Pay with card"
+                >
+                  <CreditCard className="mr-2 h-5 w-5" />
+                  Pay with Card
+                </Button>
+              )}
               <Button
                 className="w-full"
                 variant="ghost"
@@ -592,4 +622,3 @@ export default function POSPage() {
     )
   }
 }
-

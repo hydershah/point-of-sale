@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
             status: { in: ["PENDING", "PREPARING"] },
           },
           include: {
-            items: true,
+            order_items: true,
           },
         },
       },
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
               id: activeOrder.id,
               orderNumber: activeOrder.orderNumber,
               total: activeOrder.total,
-              items: activeOrder.items.length,
+              items: activeOrder.order_items.length,
             }
           : undefined,
       }

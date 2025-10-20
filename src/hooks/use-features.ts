@@ -1,38 +1,84 @@
-import useSWR from 'swr'
+import { useEffect, useState } from 'react'
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+function jsonFetch<T = any>(url: string, init?: RequestInit): Promise<T> {
+  return fetch(url, { cache: 'no-store', ...init }).then(async (res) => {
+    const data = await res.json().catch(() => undefined)
+    if (!res.ok) {
+      const message = (data && (data.error || data.message)) || 'Request failed'
+      throw new Error(message)
+    }
+    return data as T
+  })
+}
 
 /**
  * Hook to check if a specific feature is enabled
  */
 export function useFeature(featureKey: string): boolean {
-  const { data } = useSWR(
-    `/api/tenant/features/${featureKey}`,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-    }
-  )
+  const [enabled, setEnabled] = useState<boolean>(false)
 
-  return data?.enabled ?? false
+  const load = async () => {
+    try {
+      const data = await jsonFetch<{ enabled: boolean }>(`/api/tenant/features/${featureKey}`)
+      setEnabled(!!data.enabled)
+    } catch {
+      setEnabled(false)
+    }
+  }
+
+  useEffect(() => {
+    load()
+    const handler = () => load()
+    if (typeof window !== 'undefined') {
+      window.addEventListener('features.updated', handler as EventListener)
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('features.updated', handler as EventListener)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [featureKey])
+
+  return enabled
 }
 
 /**
  * Hook to get all tenant features
  */
 export function useTenantFeatures() {
-  const { data, error, isLoading, mutate } = useSWR(
-    '/api/tenant/features',
-    fetcher
-  )
+  const [features, setFeatures] = useState<Record<string, boolean> | undefined>()
+  const [isLoading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<Error | undefined>()
 
-  return {
-    features: data as Record<string, boolean> | undefined,
-    isLoading,
-    error,
-    mutate,
+  const load = async () => {
+    setLoading(true)
+    setError(undefined)
+    try {
+      const data = await jsonFetch<Record<string, boolean>>('/api/tenant/features')
+      setFeatures(data)
+    } catch (e: any) {
+      setError(e)
+    } finally {
+      setLoading(false)
+    }
   }
+
+  useEffect(() => {
+    load()
+    const handler = () => load()
+    if (typeof window !== 'undefined') {
+      window.addEventListener('features.updated', handler as EventListener)
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('features.updated', handler as EventListener)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return { features, isLoading, error, mutate: load }
 }
 
 /**
@@ -59,7 +105,10 @@ export function useToggleFeature() {
         throw new Error(error.error || 'Failed to toggle feature')
       }
 
-      // Revalidate features
+      // Notify listeners and revalidate features
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('features.updated'))
+      }
       mutate()
 
       return { success: true }
@@ -88,7 +137,9 @@ export function useToggleFeature() {
         throw new Error(error.error || 'Failed to reset features')
       }
 
-      // Revalidate features
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('features.updated'))
+      }
       mutate()
 
       return { success: true }
@@ -107,24 +158,62 @@ export function useToggleFeature() {
  * Hook to get feature catalog
  */
 export function useFeatureCatalog() {
-  const { data, error, isLoading } = useSWR('/api/features', fetcher)
+  const [catalog, setCatalog] = useState<any>()
+  const [isLoading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | undefined>()
 
-  return {
-    catalog: data,
-    isLoading,
-    error,
-  }
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      setLoading(true)
+      setError(undefined)
+      try {
+        const data = await jsonFetch<any>('/api/features')
+        if (!cancelled) setCatalog(data)
+      } catch (e: any) {
+        if (!cancelled) setError(e)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  return { catalog, isLoading, error }
 }
 
 /**
  * Hook to get business type templates
  */
 export function useBusinessTypes() {
-  const { data, error, isLoading } = useSWR('/api/business-types', fetcher)
+  const [templates, setTemplates] = useState<any>()
+  const [isLoading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | undefined>()
 
-  return {
-    templates: data,
-    isLoading,
-    error,
+  const load = async () => {
+    setLoading(true)
+    setError(undefined)
+    try {
+      const data = await jsonFetch<any>('/api/business-types')
+      setTemplates(data)
+    } catch (e: any) {
+      setError(e)
+    } finally {
+      setLoading(false)
+    }
   }
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      if (!cancelled) await load()
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  return { templates, isLoading, error, mutate: load }
 }

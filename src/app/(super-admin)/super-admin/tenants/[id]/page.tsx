@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { formatDate } from "@/lib/utils"
+import { Suspense } from "react"
+import TenantAdminControls from "./admin-controls"
 
 export default async function TenantDetailsPage({
   params,
@@ -77,23 +79,25 @@ export default async function TenantDetailsPage({
           <CardHeader>
             <CardTitle>Subscription</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-3">
             {tenant.subscriptions ? (
               <>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Plan</span>
-                  <Badge variant="outline">{tenant.subscriptions.plan}</Badge>
-                </div>
-                <div className="text-sm">
-                  Status: {tenant.subscriptions.status}
-                </div>
-                <div className="text-sm">
-                  Billing: {tenant.subscriptions.interval} • ${tenant.subscriptions.amount.toFixed(2)}
-                </div>
+                <div className="text-sm">Plan: <Badge variant="outline">{tenant.subscriptions.plan}</Badge></div>
+                <div className="text-sm">Status: {tenant.subscriptions.status}</div>
+                <div className="text-sm">Billing: {tenant.subscriptions.interval} • ${tenant.subscriptions.amount.toFixed(2)}</div>
               </>
             ) : (
               <div className="text-sm text-muted-foreground">No subscription record</div>
             )}
+            <Suspense>
+              <TenantAdminControls
+                tenantId={tenant.id}
+                initialTenantStatus={tenant.status as any}
+                initialPlan={(tenant.subscriptions?.plan || 'BASIC') as any}
+                initialSubStatus={(tenant.subscriptions?.status || 'TRIALING') as any}
+                initialTemplateId={(tenant as any).businessTemplateId || null}
+              />
+            </Suspense>
           </CardContent>
         </Card>
 
@@ -130,9 +134,15 @@ export default async function TenantDetailsPage({
               />
             </div>
           )}
+          <div className="pt-2">
+            <Link href={`/super-admin/tenants/${tenant.id}/features`}>
+              <Button variant="outline" size="sm">Manage Features</Button>
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>
   )
 }
 
+// client admin controls moved to ./admin-controls

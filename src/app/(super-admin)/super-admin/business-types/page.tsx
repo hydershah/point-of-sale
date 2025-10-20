@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -7,7 +8,9 @@ import { useBusinessTypes } from '@/hooks/use-features'
 import { Loader2, Plus, Edit, Eye } from 'lucide-react'
 
 export default function SuperAdminBusinessTypesPage() {
-  const { templates, isLoading } = useBusinessTypes()
+  const { templates, isLoading, mutate } = useBusinessTypes()
+  const [seeding, setSeeding] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
 
   if (isLoading) {
     return (
@@ -97,12 +100,39 @@ export default function SuperAdminBusinessTypesPage() {
 
       {(!templates || templates.length === 0) && (
         <Card>
-          <CardContent className="text-center py-12">
-            <p className="text-muted-foreground mb-4">No business type templates found</p>
-            <Button>
-              <Plus className="mr-2 w-4 h-4" />
-              Create First Template
-            </Button>
+          <CardContent className="text-center py-12 space-y-4">
+            <p className="text-muted-foreground">No business type templates found</p>
+            <div className="flex items-center justify-center gap-3">
+              <Button
+                onClick={async () => {
+                  setSeeding(true)
+                  setMessage(null)
+                  try {
+                    const res = await fetch('/api/super-admin/seed-defaults', { method: 'POST' })
+                    const data = await res.json().catch(() => ({}))
+                    if (!res.ok) throw new Error(data.error || 'Failed to seed defaults')
+                    setMessage('Default templates and features created')
+                    await mutate()
+                  } catch (e: any) {
+                    setMessage(e.message)
+                  } finally {
+                    setSeeding(false)
+                  }
+                }}
+                disabled={seeding}
+              >
+                {seeding ? (
+                  <>
+                    <Loader2 className="mr-2 w-4 h-4 animate-spin" /> Seeding...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 w-4 h-4" /> Create Default Templates
+                  </>
+                )}
+              </Button>
+            </div>
+            {message && <p className="text-sm text-muted-foreground">{message}</p>}
           </CardContent>
         </Card>
       )}

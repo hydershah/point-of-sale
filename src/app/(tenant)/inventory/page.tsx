@@ -12,6 +12,9 @@ import { TableLoadingSkeleton } from "@/components/loading-skeleton"
 import { EmptyState } from "@/components/empty-state"
 import { ErrorState } from "@/components/error-state"
 import { ConfirmationDialog } from "@/components/confirmation-dialog"
+import { FeatureGate } from "@/components/feature-gate"
+import Link from "next/link"
+import { useFeature } from "@/hooks/use-features"
 
 interface Product {
   id: string
@@ -42,6 +45,7 @@ export default function InventoryPage() {
     product: null
   })
   const { toast } = useToast()
+  const showLowStock = useFeature('enable_low_stock_alerts')
 
   const loadProducts = useCallback(async () => {
     setIsLoading(true)
@@ -122,6 +126,26 @@ export default function InventoryPage() {
   }
 
   return (
+    <FeatureGate
+      feature="enable_inventory_tracking"
+      fallback={
+        <div className="p-8">
+          <Card className="max-w-2xl">
+            <CardHeader>
+              <CardTitle>Inventory Unavailable</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                Inventory tracking is disabled for your tenant. Enable it in Feature Settings to access inventory.
+              </p>
+              <Button asChild>
+                <Link href="/settings/features">Go to Feature Settings</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -136,7 +160,7 @@ export default function InventoryPage() {
         </Button>
       </div>
 
-      {lowStockProducts.length > 0 && (
+      {showLowStock && lowStockProducts.length > 0 && (
         <Card className="mb-6 border-orange-200 bg-orange-50">
           <CardHeader>
             <CardTitle className="flex items-center text-orange-800">
@@ -412,5 +436,6 @@ export default function InventoryPage() {
         variant="destructive"
       />
     </div>
+    </FeatureGate>
   )
 }

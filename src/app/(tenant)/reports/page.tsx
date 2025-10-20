@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Download, TrendingUp, DollarSign, ShoppingCart } from "lucide-react"
 import { formatCurrency, formatDate } from "@/lib/utils"
+import { FeatureGate } from "@/components/feature-gate"
+import Link from "next/link"
 
 interface ReportData {
   summary: {
@@ -90,6 +92,26 @@ export default function ReportsPage() {
   }
 
   return (
+    <FeatureGate
+      feature="enable_basic_reports"
+      fallback={
+        <div className="p-8">
+          <Card className="max-w-2xl">
+            <CardHeader>
+              <CardTitle>Reports Unavailable</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                Reports are disabled for your tenant. Enable "Basic Reports" in Feature Settings to access analytics.
+              </p>
+              <Button asChild>
+                <Link href="/settings/features">Go to Feature Settings</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -296,6 +318,6 @@ export default function ReportsPage() {
         </Card>
       </div>
     </div>
+    </FeatureGate>
   )
 }
-

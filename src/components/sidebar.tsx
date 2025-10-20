@@ -19,6 +19,7 @@ import {
   Tags,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useTenantFeatures } from "@/hooks/use-features"
 
 interface SidebarProps {
   tenant: {
@@ -35,22 +36,35 @@ interface SidebarProps {
 export function Sidebar({ tenant, user }: SidebarProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const pathname = usePathname()
+  const { features } = useTenantFeatures()
 
-  const showRestaurantFeatures = tenant.businessType === "RESTAURANT" || tenant.businessType === "MIXED"
   const isAdmin = user.role === "BUSINESS_ADMIN"
   const isManagerOrAdmin = user.role === "BUSINESS_ADMIN" || user.role === "MANAGER"
 
   const navItems = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, show: true },
-    { href: "/pos", label: "POS", icon: ShoppingCart, show: true },
-    { href: "/tables", label: "Tables", icon: Utensils, show: showRestaurantFeatures },
-    { href: "/inventory", label: "Inventory", icon: Package, show: isManagerOrAdmin },
-    { href: "/categories", label: "Categories", icon: Tags, show: isManagerOrAdmin },
-    { href: "/customers", label: "Customers", icon: Users, show: isManagerOrAdmin },
-    { href: "/orders", label: "Orders", icon: Receipt, show: isManagerOrAdmin },
-    { href: "/reports", label: "Reports", icon: BarChart3, show: isManagerOrAdmin },
-    { href: "/settings", label: "Settings", icon: Settings, show: isAdmin },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/pos", label: "POS", icon: ShoppingCart, feature: "enable_pos_interface" },
+    { href: "/tables", label: "Tables", icon: Utensils, feature: "enable_table_management" },
+    { href: "/inventory", label: "Inventory", icon: Package, feature: "enable_inventory_tracking", role: "managerOrAdmin" as const },
+    { href: "/categories", label: "Categories", icon: Tags, feature: "enable_inventory_tracking", role: "managerOrAdmin" as const },
+    { href: "/customers", label: "Customers", icon: Users, feature: "enable_customer_database", role: "managerOrAdmin" as const },
+    { href: "/orders", label: "Orders", icon: Receipt, feature: "enable_order_history", role: "managerOrAdmin" as const },
+    { href: "/reports", label: "Reports", icon: BarChart3, feature: "enable_basic_reports", role: "managerOrAdmin" as const },
+    { href: "/settings", label: "Settings", icon: Settings, role: "admin" as const },
   ]
+
+  const passesRole = (role?: "admin" | "managerOrAdmin") => {
+    if (!role) return true
+    if (role === "admin") return isAdmin
+    return isManagerOrAdmin
+  }
+
+  const passesFeature = (feature?: string) => {
+    if (!feature) return true
+    // Optimistic: show items while loading or on error
+    if (features === undefined) return true
+    return !!features[feature]
+  }
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
@@ -70,7 +84,7 @@ export function Sidebar({ tenant, user }: SidebarProps) {
       <nav className="flex-1 p-4 space-y-1 overflow-auto" aria-label="Main navigation">
         {navItems.map(
           (item) =>
-            item.show && (
+            passesRole(item.role) && passesFeature((item as any).feature) && (
               <Link
                 key={item.href}
                 href={item.href}

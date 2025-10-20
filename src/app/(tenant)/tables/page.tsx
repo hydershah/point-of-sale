@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Users } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { formatCurrency } from "@/lib/utils"
+import { FeatureGate } from "@/components/feature-gate"
+import Link from "next/link"
 
 interface Table {
   id: string
@@ -91,6 +93,26 @@ export default function TablesPage() {
   const reservedCount = tables.filter((t) => t.status === "RESERVED").length
 
   return (
+    <FeatureGate
+      feature="enable_table_management"
+      fallback={
+        <div className="p-8">
+          <Card className="max-w-2xl">
+            <CardHeader>
+              <CardTitle>Table Management Unavailable</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                This feature is not enabled for your tenant. Enable "Table Management" in settings to use this page.
+              </p>
+              <Button asChild>
+                <Link href="/settings/features">Go to Feature Settings</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -205,6 +227,6 @@ export default function TablesPage() {
         </div>
       )}
     </div>
+    </FeatureGate>
   )
 }
-

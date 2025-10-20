@@ -1,6 +1,6 @@
 'use client'
 
-import { useFeature } from '@/hooks/use-features'
+import { useTenantFeatures } from '@/hooks/use-features'
 import { ReactNode } from 'react'
 
 interface FeatureGateProps {
@@ -13,13 +13,13 @@ interface FeatureGateProps {
  * Component that conditionally renders children based on feature flag
  */
 export function FeatureGate({ feature, fallback = null, children }: FeatureGateProps) {
-  const isEnabled = useFeature(feature)
+  const { features, isLoading } = useTenantFeatures()
 
-  if (!isEnabled) {
-    return <>{fallback}</>
-  }
+  // Avoid flashing the fallback while loading feature state
+  if (isLoading) return null
 
-  return <>{children}</>
+  const enabled = !!features?.[feature]
+  return <>{enabled ? children : fallback}</>
 }
 
 /**

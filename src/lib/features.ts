@@ -36,8 +36,11 @@ export async function isFeatureEnabled(
  */
 export async function checkFeatureAccess(
   tenantId: string,
-  featureKey: string
+  featureKey: string,
+  options: { bypassPlanCheck?: boolean } = {}
 ): Promise<{ allowed: boolean; reason?: string }> {
+  const shouldBypassPlan = options.bypassPlanCheck ?? true
+
   // Get tenant with subscription
   const tenant = await prisma.tenants.findUnique({
     where: { id: tenantId },
@@ -65,7 +68,7 @@ export async function checkFeatureAccess(
   }
 
   // Check subscription plan requirement
-  if (feature.minimumPlan && tenant.subscriptions) {
+  if (!shouldBypassPlan && feature.minimumPlan && tenant.subscriptions) {
     const planHierarchy: SubscriptionPlan[] = ['BASIC', 'PRO', 'ENTERPRISE']
     const requiredPlanIndex = planHierarchy.indexOf(feature.minimumPlan)
     const currentPlanIndex = planHierarchy.indexOf(tenant.subscriptions.plan)
@@ -119,6 +122,33 @@ export async function getTenantFeatures(
     featureMap[tf.feature.featureKey] = tf.isEnabled
   }
 
+  // Fallbacks for legacy tenant_settings flags or sensible defaults
+  // This helps older tenants see expected sections until fully migrated
+  try {
+    const settings = await prisma.tenant_settings.findUnique({
+      where: { tenantId },
+      select: {
+        enableInventory: true,
+        enableTables: true,
+        enableKitchenDisplay: true,
+      },
+    })
+
+    if (settings) {
+      if (featureMap['enable_inventory_tracking'] === undefined && settings.enableInventory)
+        featureMap['enable_inventory_tracking'] = true
+      if (featureMap['enable_table_management'] === undefined && settings.enableTables)
+        featureMap['enable_table_management'] = true
+      if (featureMap['enable_kitchen_display'] === undefined && settings.enableKitchenDisplay)
+        featureMap['enable_kitchen_display'] = true
+    }
+  } catch (e) {
+    // ignore fallback errors
+  }
+
+  // Ensure core UX isn’t blocked if tenant has no rows yet
+  if (featureMap['enable_pos_interface'] === undefined) featureMap['enable_pos_interface'] = true
+
   return featureMap
 }
 
@@ -128,10 +158,13 @@ export async function getTenantFeatures(
 export async function enableFeature(
   tenantId: string,
   featureKey: string,
-  enabledBy?: string
+  enabledBy?: string,
+  options?: { bypassPlanCheck?: boolean }
 ): Promise<{ success: boolean; error?: string }> {
   // Check if tenant can access this feature
-  const access = await checkFeatureAccess(tenantId, featureKey)
+  const access = await checkFeatureAccess(tenantId, featureKey, {
+    bypassPlanCheck: options?.bypassPlanCheck ?? true,
+  })
   if (!access.allowed) {
     return { success: false, error: access.reason }
   }
@@ -305,6 +338,9 @@ export async function initializeTenantFeatures(
   const templateFeatures = await prisma.template_features.findMany({
     where: { templateId },
   })
+
+  // Ensure we start from a clean slate before applying defaults
+  await prisma.tenant_features.deleteMany({ where: { tenantId } })
 
   for (const tf of templateFeatures) {
     await prisma.tenant_features.create({

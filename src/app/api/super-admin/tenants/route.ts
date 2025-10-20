@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import bcrypt from "bcryptjs"
 import { randomUUID } from "crypto"
+import { initializeTenantFeatures } from "@/lib/features"
 
 export async function POST(req: NextRequest) {
   try {
@@ -58,6 +59,32 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // Pick a default business template based on businessType
+    const defaultTemplateTypeKey = (() => {
+      switch (businessType) {
+        case "RETAIL":
+          return "retail_store"
+        case "RESTAURANT":
+          return "restaurant_full_service"
+        case "COFFEE_SHOP":
+          return "coffee_shop_takeaway"
+        case "TAKEAWAY":
+          return "kebab_shop_takeaway"
+        case "MIXED":
+          return "restaurant_full_service"
+        default:
+          return undefined
+      }
+    })()
+
+    let templateId: string | undefined
+    if (defaultTemplateTypeKey) {
+      const template = await prisma.business_type_templates.findUnique({
+        where: { typeKey: defaultTemplateTypeKey },
+      })
+      if (template) templateId = template.id
+    }
+
     // Create tenant
     const tenant = await prisma.tenants.create({
       data: {
@@ -72,6 +99,7 @@ export async function POST(req: NextRequest) {
         primaryColor: primaryColor || null,
         status: "TRIAL",
         updatedAt: now,
+        businessTemplateId: templateId,
         subscriptions: {
           connect: {
             id: subscription.id,
@@ -97,6 +125,11 @@ export async function POST(req: NextRequest) {
         },
       },
     })
+
+    // Initialize tenant features from template (if available)
+    if (templateId) {
+      await initializeTenantFeatures(tenant.id, templateId)
+    }
 
     // Create admin user
     const hashedPassword = await bcrypt.hash(adminPassword, 10)

@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/accordion'
 import { useFeatureCatalog, useTenantFeatures, useToggleFeature } from '@/hooks/use-features'
 import { Loader2, AlertCircle, CheckCircle2, Crown } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
+import { useToast } from '@/components/ui/use-toast'
 
 export default function FeaturesPage() {
   const { catalog, isLoading: catalogLoading } = useFeatureCatalog()
@@ -147,7 +147,7 @@ function FeatureRow({
   enabled: boolean
   onToggle: (enabled: boolean) => void
 }) {
-  const isDisabled = feature.isCore || feature.requiresUpgrade
+  const isDisabled = feature.isCore
 
   return (
     <div className="flex items-start justify-between py-3 border-b last:border-0">

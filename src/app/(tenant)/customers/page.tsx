@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { Plus, Search, Mail, Phone, MapPin } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { formatCurrency, formatDate } from "@/lib/utils"
+import { FeatureGate } from "@/components/feature-gate"
+import Link from "next/link"
+import { useFeature } from "@/hooks/use-features"
 
 interface Customer {
   id: string
@@ -26,6 +29,7 @@ export default function CustomersPage() {
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const { toast } = useToast()
+  const showLoyalty = useFeature('enable_loyalty_program')
 
   const loadCustomers = useCallback(async () => {
     try {
@@ -56,6 +60,26 @@ export default function CustomersPage() {
   }, [searchQuery, customers])
 
   return (
+    <FeatureGate
+      feature="enable_customer_database"
+      fallback={
+        <div className="p-8">
+          <Card className="max-w-2xl">
+            <CardHeader>
+              <CardTitle>Customers Unavailable</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                Customer database is disabled for your tenant. Enable it to manage customers.
+              </p>
+              <Button asChild>
+                <Link href="/settings/features">Go to Feature Settings</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -163,7 +187,7 @@ export default function CustomersPage() {
                   </div>
                   <div className="flex gap-2 justify-end">
                     <Badge>{customer.visitCount} visits</Badge>
-                    {customer.loyaltyPoints > 0 && (
+                    {showLoyalty && customer.loyaltyPoints > 0 && (
                       <Badge variant="secondary">
                         {customer.loyaltyPoints} points
                       </Badge>
@@ -185,6 +209,6 @@ export default function CustomersPage() {
         </CardContent>
       </Card>
     </div>
+    </FeatureGate>
   )
 }
-
