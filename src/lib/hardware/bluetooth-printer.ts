@@ -1,39 +1,5 @@
 // Bluetooth printer support using Web Bluetooth API
-// Type definitions for Web Bluetooth API (browser-only)
-declare global {
-  interface Navigator {
-    bluetooth?: {
-      requestDevice(options?: RequestDeviceOptions): Promise<BluetoothDevice>
-      getDevices(): Promise<BluetoothDevice[]>
-    }
-  }
-}
-
-interface RequestDeviceOptions {
-  filters?: Array<{ services?: string[] }>
-  optionalServices?: string[]
-}
-
-interface BluetoothDevice {
-  id: string
-  name?: string
-  gatt?: BluetoothRemoteGATTServer
-}
-
-interface BluetoothRemoteGATTServer {
-  connected: boolean
-  connect(): Promise<BluetoothRemoteGATTServer>
-  disconnect(): void
-  getPrimaryService(service: string): Promise<BluetoothRemoteGATTService>
-}
-
-interface BluetoothRemoteGATTService {
-  getCharacteristic(characteristic: string): Promise<BluetoothRemoteGATTCharacteristic>
-}
-
-interface BluetoothRemoteGATTCharacteristic {
-  writeValue(value: BufferSource): Promise<void>
-}
+// Type definitions are in src/types/bluetooth.d.ts
 
 export interface BluetoothPrinterDevice {
   device: BluetoothDevice
