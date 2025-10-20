@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import bcrypt from "bcryptjs"
+import { randomUUID } from "crypto"
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,8 +41,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Create subscription (trial by default)
+    const now = new Date()
+
     const subscription = await prisma.subscriptions.create({
       data: {
+        id: randomUUID(),
         plan: "BASIC",
         status: "TRIALING",
         amount: 29,
@@ -50,12 +54,14 @@ export async function POST(req: NextRequest) {
         maxUsers: 5,
         maxLocations: 1,
         trialEnds: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days trial
+        updatedAt: now,
       },
     })
 
     // Create tenant
     const tenant = await prisma.tenants.create({
       data: {
+        id: randomUUID(),
         name,
         subdomain,
         email,
@@ -65,18 +71,28 @@ export async function POST(req: NextRequest) {
         logo: logo || null,
         primaryColor: primaryColor || null,
         status: "TRIAL",
-        subscriptionId: subscription.id,
-        settings: {
+        updatedAt: now,
+        subscriptions: {
+          connect: {
+            id: subscription.id,
+          },
+        },
+        tenant_settings: {
           create: {
+            id: randomUUID(),
             currency: "USD",
             currencySymbol: "$",
             timezone: "UTC",
             taxRate: 0,
             taxName: "Tax",
+            receiptFooter: null,
+            receiptHeader: null,
             enableInventory: true,
             enableTables: businessType === "RESTAURANT",
             enableKitchenDisplay: businessType === "RESTAURANT",
             enableTakeaway: businessType === "TAKEAWAY" || businessType === "MIXED",
+            enableLoyalty: false,
+            updatedAt: now,
           },
         },
       },
@@ -84,14 +100,16 @@ export async function POST(req: NextRequest) {
 
     // Create admin user
     const hashedPassword = await bcrypt.hash(adminPassword, 10)
-    const adminUser = await prisma.users.create({
+    await prisma.users.create({
       data: {
+        id: randomUUID(),
         email: adminEmail,
         password: hashedPassword,
         name: adminName,
         role: "BUSINESS_ADMIN",
         tenantId: tenant.id,
         isActive: true,
+        updatedAt: now,
       },
     })
 

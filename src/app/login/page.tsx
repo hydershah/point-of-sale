@@ -44,10 +44,19 @@ export default function LoginPage() {
         const response = await fetch("/api/auth/session")
         const session = await response.json()
 
+        const clearTenantCookie = () => {
+          document.cookie = "tenant_subdomain=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+        }
+
         // Redirect based on user role
         if (session?.user?.role === "SUPER_ADMIN") {
+          clearTenantCookie()
           window.location.href = "/super-admin/dashboard"
         } else {
+          const tenantSubdomain = session?.user?.tenantSubdomain
+          if (tenantSubdomain) {
+            document.cookie = `tenant_subdomain=${tenantSubdomain}; path=/; max-age=${60 * 60 * 24 * 30}`
+          }
           window.location.href = "/dashboard"
         }
       }
@@ -104,4 +113,3 @@ export default function LoginPage() {
     </div>
   )
 }
-

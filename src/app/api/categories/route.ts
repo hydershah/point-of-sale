@@ -16,6 +16,11 @@ export async function GET(req: NextRequest) {
     const categories = await prisma.categories.findMany({
       where: { tenantId: tenant.id },
       orderBy: { sortOrder: "asc" },
+      include: {
+        _count: {
+          select: { products: true },
+        },
+      },
     })
 
     return NextResponse.json({ categories })

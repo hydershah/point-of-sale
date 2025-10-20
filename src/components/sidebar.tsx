@@ -16,6 +16,7 @@ import {
   Utensils,
   Menu,
   X,
+  Tags,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -44,6 +45,7 @@ export function Sidebar({ tenant, user }: SidebarProps) {
     { href: "/pos", label: "POS", icon: ShoppingCart, show: true },
     { href: "/tables", label: "Tables", icon: Utensils, show: showRestaurantFeatures },
     { href: "/inventory", label: "Inventory", icon: Package, show: isManagerOrAdmin },
+    { href: "/categories", label: "Categories", icon: Tags, show: isManagerOrAdmin },
     { href: "/customers", label: "Customers", icon: Users, show: isManagerOrAdmin },
     { href: "/orders", label: "Orders", icon: Receipt, show: isManagerOrAdmin },
     { href: "/reports", label: "Reports", icon: BarChart3, show: isManagerOrAdmin },

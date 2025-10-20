@@ -22,13 +22,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Get tenant settings for tax calculation
-    const settings = await prisma.tenant_settingss.findUnique({
+    const settings = await prisma.tenant_settings.findUnique({
       where: { tenantId: tenant.id },
     })
 
     // Calculate order totals
     let subtotal = 0
     const orderItems: Array<{
+      id: string
       productId: string
       name: string
       price: number
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
       subtotal += itemSubtotal
 
       orderItems.push({
+        id: nanoid(),
         productId: product.id,
         name: product.name,
         price: product.price,
@@ -90,8 +92,9 @@ export async function POST(req: NextRequest) {
     // Create order in transaction
     const order = await prisma.$transaction(async (tx) => {
       // Create order
-      const newOrder = await tx.order.create({
+      const newOrder = await tx.orders.create({
         data: {
+          id: nanoid(),
           tenantId: tenant.id,
           orderNumber,
           ticketId,
@@ -104,30 +107,32 @@ export async function POST(req: NextRequest) {
           subtotal,
           tax,
           total,
-          items: {
+          updatedAt: new Date(),
+          order_items: {
             create: orderItems,
           },
           payments: {
             create: {
+              id: nanoid(),
               method: paymentMethod,
               amount: total,
             },
           },
         },
         include: {
-          items: true,
+          order_items: true,
           payments: true,
         },
       })
 
       // Update product stock
       for (const item of items) {
-        const product = await tx.product.findUnique({
+        const product = await tx.products.findUnique({
           where: { id: item.productId },
         })
 
         if (product && product.trackStock) {
-          await tx.product.update({
+          await tx.products.update({
             where: { id: item.productId },
             data: {
               stock: {
@@ -139,8 +144,9 @@ export async function POST(req: NextRequest) {
       }
 
       // Create transaction record
-      await tx.transaction.create({
+      await tx.transactions.create({
         data: {
+          id: nanoid(),
           tenantId: tenant.id,
           type: "SALE",
           amount: total,
@@ -151,11 +157,12 @@ export async function POST(req: NextRequest) {
       })
 
       // Update order status to completed
-      const completedOrder = await tx.order.update({
+      const completedOrder = await tx.orders.update({
         where: { id: newOrder.id },
         data: {
           status: "COMPLETED",
           completedAt: new Date(),
+          updatedAt: new Date(),
         },
       })
 
@@ -198,13 +205,17 @@ export async function GET(req: NextRequest) {
       where.status = status
     }
 
-    const orders = await prisma.orders.findMany({
+    const orderRecords = await prisma.orders.findMany({
       where,
       include: {
-        items: true,
+        order_items: true,
         payments: true,
-        customer: true,
-        user: {
+        customers: {
+          select: {
+            name: true,
+          },
+        },
+        users: {
           select: {
             name: true,
           },
@@ -213,6 +224,28 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
       take: limit,
     })
+
+    const orders = orderRecords.map((order) => ({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      ticketId: order.ticketId,
+      type: order.type,
+      status: order.status,
+      total: order.total,
+      subtotal: order.subtotal,
+      tax: order.tax,
+      createdAt: order.createdAt,
+      customerName: order.customerName || order.customers?.name || undefined,
+      user: {
+        name: order.users?.name || "Unknown",
+      },
+      items: order.order_items.map((item) => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+      payments: order.payments,
+    }))
 
     return NextResponse.json({ orders })
   } catch (error) {
@@ -223,4 +256,3 @@ export async function GET(req: NextRequest) {
     )
   }
 }
-

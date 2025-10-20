@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
     const tenantData = await prisma.tenants.findUnique({
       where: { id: tenant.id },
-      include: { settings: true },
+      include: { tenant_settings: true },
     })
 
     if (!tenantData) {
@@ -27,17 +27,17 @@ export async function GET(req: NextRequest) {
       email: tenantData.email,
       phone: tenantData.phone || "",
       address: tenantData.address || "",
-      currency: tenantData.settings?.currency || "USD",
-      currencySymbol: tenantData.settings?.currencySymbol || "$",
-      taxRate: tenantData.settings?.taxRate || 0,
-      taxName: tenantData.settings?.taxName || "Tax",
-      receiptHeader: tenantData.settings?.receiptHeader || "",
-      receiptFooter: tenantData.settings?.receiptFooter || "",
-      printerIp: tenantData.settings?.printerIp || "",
-      printerPort: tenantData.settings?.printerPort || 9100,
-      enableKitchenDisplay: tenantData.settings?.enableKitchenDisplay || false,
-      enableTables: tenantData.settings?.enableTables || false,
-      enableInventory: tenantData.settings?.enableInventory || true,
+      currency: tenantData.tenant_settings?.currency || "USD",
+      currencySymbol: tenantData.tenant_settings?.currencySymbol || "$",
+      taxRate: tenantData.tenant_settings?.taxRate || 0,
+      taxName: tenantData.tenant_settings?.taxName || "Tax",
+      receiptHeader: tenantData.tenant_settings?.receiptHeader || "",
+      receiptFooter: tenantData.tenant_settings?.receiptFooter || "",
+      printerIp: tenantData.tenant_settings?.printerIp || "",
+      printerPort: tenantData.tenant_settings?.printerPort || 9100,
+      enableKitchenDisplay: tenantData.tenant_settings?.enableKitchenDisplay || false,
+      enableTables: tenantData.tenant_settings?.enableTables || false,
+      enableInventory: tenantData.tenant_settings?.enableInventory ?? true,
     }
 
     return NextResponse.json({ settings })
@@ -80,6 +80,13 @@ export async function PUT(req: NextRequest) {
       printerPort,
     } = body
 
+    const parsedTaxRate =
+      typeof taxRate === "number" ? taxRate : parseFloat(taxRate ?? "0")
+    const parsedPrinterPort =
+      typeof printerPort === "number"
+        ? printerPort
+        : parseInt(printerPort ?? "9100", 10)
+
     // Update tenant
     await prisma.tenants.update({
       where: { id: tenant.id },
@@ -92,28 +99,28 @@ export async function PUT(req: NextRequest) {
     })
 
     // Update settings
-    await prisma.tenant_settingss.upsert({
+    await prisma.tenant_settings.upsert({
       where: { tenantId: tenant.id },
       update: {
         currency,
         currencySymbol,
-        taxRate: parseFloat(taxRate),
+        taxRate: parsedTaxRate,
         taxName,
         receiptHeader,
         receiptFooter,
         printerIp,
-        printerPort: parseInt(printerPort),
+        printerPort: parsedPrinterPort,
       },
       create: {
         tenantId: tenant.id,
         currency,
         currencySymbol,
-        taxRate: parseFloat(taxRate),
+        taxRate: parsedTaxRate,
         taxName,
         receiptHeader,
         receiptFooter,
         printerIp,
-        printerPort: parseInt(printerPort),
+        printerPort: parsedPrinterPort,
       },
     })
 
@@ -126,4 +133,3 @@ export async function PUT(req: NextRequest) {
     )
   }
 }
-

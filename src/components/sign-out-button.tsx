@@ -6,6 +6,7 @@ import { LogOut } from "lucide-react"
 
 export function SignOutButton() {
   const handleSignOut = async () => {
+    document.cookie = "tenant_subdomain=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
     await signOut({ callbackUrl: "/login" })
   }
 

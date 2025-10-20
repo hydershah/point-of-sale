@@ -13,33 +13,51 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const url = new URL(req.url)
+    const all = url.searchParams.get("all") === "true"
+
+    const where: any = { tenantId: tenant.id }
+    if (!all) {
+      where.isActive = true
+    }
+
     const products = await prisma.products.findMany({
-      where: {
-        tenantId: tenant.id,
-        isActive: true,
-      },
+      where,
       include: {
         categories: {
-          select: {
-            name: true,
-          },
+          select: { name: true },
         },
       },
-      orderBy: {
-        name: "asc",
-      },
+      orderBy: { name: "asc" },
     })
 
-    const formattedProducts = products.map((p) => ({
-      id: p.id,
-      name: p.name,
-      price: p.price,
-      category: p.categories?.name || "Uncategorized",
-      image: p.image,
-      stock: p.stock,
-      trackStock: p.trackStock,
-      barcode: p.barcode,
-    }))
+    const formattedProducts = all
+      ? products.map((p) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description || "",
+          price: p.price,
+          cost: p.cost ?? null,
+          category: p.categories?.name || "Uncategorized",
+          categoryId: p.categoryId || null,
+          sku: p.sku || "",
+          barcode: p.barcode || "",
+          stock: p.stock,
+          trackStock: p.trackStock,
+          lowStockAlert: p.lowStockAlert ?? null,
+          isActive: p.isActive,
+          image: p.image || undefined,
+        }))
+      : products.map((p) => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          category: p.categories?.name || "Uncategorized",
+          image: p.image,
+          stock: p.stock,
+          trackStock: p.trackStock,
+          barcode: p.barcode,
+        }))
 
     return NextResponse.json({ products: formattedProducts })
   } catch (error) {
@@ -68,6 +86,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { name, description, price, cost, categoryId, sku, barcode, trackStock, stock, image, lowStockAlert } = body
 
+    const parsedCost =
+      typeof cost === "number"
+        ? cost
+        : cost === undefined || cost === null || cost === ""
+        ? null
+        : parseFloat(cost)
+
     // Import nanoid at the top of the file
     const { nanoid } = await import('nanoid')
 
@@ -77,14 +102,19 @@ export async function POST(req: NextRequest) {
         tenantId: tenant.id,
         name,
         description,
-        price: parseFloat(price),
-        cost: cost ? parseFloat(cost) : null,
+        price: typeof price === "number" ? price : parseFloat(price),
+        cost: parsedCost,
         categoryId: categoryId || null,
         sku,
         barcode,
         trackStock: trackStock || false,
-        stock: trackStock ? parseInt(stock) || 0 : 0,
-        lowStockAlert: lowStockAlert ? parseInt(lowStockAlert) : null,
+        stock: trackStock ? (typeof stock === "number" ? stock : parseInt(stock) || 0) : 0,
+        lowStockAlert:
+          lowStockAlert === undefined || lowStockAlert === null || lowStockAlert === ""
+            ? null
+            : typeof lowStockAlert === "number"
+            ? lowStockAlert
+            : parseInt(lowStockAlert),
         image,
         createdById: session.user.id,
         updatedAt: new Date(),
@@ -100,4 +130,3 @@ export async function POST(req: NextRequest) {
     )
   }
 }
-

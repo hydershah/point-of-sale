@@ -264,7 +264,9 @@ export default function InventoryPage() {
                             ${product.price.toFixed(2)}
                           </td>
                           <td className="text-right py-3 px-4">
-                            {product.cost ? `$${product.cost.toFixed(2)}` : "-"}
+                            {product.cost !== null && product.cost !== undefined
+                              ? `$${product.cost.toFixed(2)}`
+                              : "-"}
                           </td>
                           <td className="text-right py-3 px-4">
                             {product.trackStock ? (

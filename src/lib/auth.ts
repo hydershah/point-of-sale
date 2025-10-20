@@ -36,6 +36,7 @@ export const authOptions: NextAuthOptions = {
             name: superAdmin.name,
             role: 'SUPER_ADMIN',
             tenantId: null,
+            tenantSubdomain: null,
           }
         }
 
@@ -65,6 +66,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           role: user.role,
           tenantId: user.tenantId,
+          tenantSubdomain: user.tenants?.subdomain || null,
         }
       },
     }),
@@ -75,6 +77,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id
         token.role = user.role
         token.tenantId = user.tenantId
+        token.tenantSubdomain = user.tenantSubdomain ?? null
       }
       return token
     },
@@ -83,6 +86,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string
         session.user.role = token.role as string
         session.user.tenantId = token.tenantId as string | null
+        session.user.tenantSubdomain = token.tenantSubdomain as string | null
       }
       return session
     },

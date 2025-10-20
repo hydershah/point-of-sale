@@ -1,4 +1,4 @@
-import { headers } from 'next/headers'
+import { headers, cookies } from 'next/headers'
 import { prisma } from './prisma'
 import { cache } from 'react'
 
@@ -100,7 +100,14 @@ export async function getCurrentTenant(): Promise<TenantContext | null> {
     const headersList = headers()
     const host = headersList.get('host') || ''
     if (host.includes('localhost')) {
-      subdomain = 'demo'
+      const cookieStore = cookies()
+      const cookieSubdomain = cookieStore.get('tenant_subdomain')?.value
+      if (cookieSubdomain) {
+        subdomain = cookieSubdomain
+      } else {
+        const headerSubdomain = headersList.get('x-tenant-subdomain')
+        subdomain = headerSubdomain || 'demo'
+      }
     } else {
       return null
     }
@@ -118,4 +125,3 @@ export function withTenantIsolation(tenantId: string) {
     tenantId,
   }
 }
-

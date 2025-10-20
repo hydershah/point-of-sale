@@ -60,6 +60,13 @@ export async function PUT(
     const body = await req.json()
     const { name, description, price, cost, categoryId, sku, barcode, trackStock, stock, lowStockAlert, image, isActive } = body
 
+    const parsedCost =
+      typeof cost === "number"
+        ? cost
+        : cost === undefined || cost === null || cost === ""
+        ? null
+        : parseFloat(cost)
+
     // Verify product belongs to this tenant
     const existingProduct = await prisma.products.findFirst({
       where: {
@@ -77,14 +84,19 @@ export async function PUT(
       data: {
         name,
         description,
-        price: parseFloat(price),
-        cost: cost ? parseFloat(cost) : null,
+        price: typeof price === "number" ? price : parseFloat(price),
+        cost: parsedCost,
         categoryId: categoryId || null,
         sku,
         barcode,
         trackStock: trackStock || false,
-        stock: trackStock ? parseInt(stock) || 0 : 0,
-        lowStockAlert: lowStockAlert ? parseInt(lowStockAlert) : null,
+        stock: trackStock ? (typeof stock === "number" ? stock : parseInt(stock) || 0) : 0,
+        lowStockAlert:
+          lowStockAlert === undefined || lowStockAlert === null || lowStockAlert === ""
+            ? null
+            : typeof lowStockAlert === "number"
+            ? lowStockAlert
+            : parseInt(lowStockAlert),
         image,
         isActive: isActive !== undefined ? isActive : true,
         updatedAt: new Date(),
