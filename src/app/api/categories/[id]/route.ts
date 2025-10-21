@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { getCurrentTenant } from "@/lib/tenant"
 
+export const dynamic = 'force-dynamic'
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }

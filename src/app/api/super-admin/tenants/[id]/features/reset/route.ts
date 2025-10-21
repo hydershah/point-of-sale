@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { resetToTemplateDefaults } from '@/lib/features'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }

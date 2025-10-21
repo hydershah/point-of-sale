@@ -6,6 +6,8 @@ import bcrypt from "bcryptjs"
 import { randomUUID } from "crypto"
 import { initializeTenantFeatures } from "@/lib/features"
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)

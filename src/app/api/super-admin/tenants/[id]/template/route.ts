@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { initializeTenantFeatures, resetToTemplateDefaults } from '@/lib/features'
 
+export const dynamic = 'force-dynamic'
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }

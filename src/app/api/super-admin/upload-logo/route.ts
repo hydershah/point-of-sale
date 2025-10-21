@@ -5,6 +5,8 @@ import { randomUUID } from "crypto"
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "logos")
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: NextRequest) {
   try {
     const { image } = await req.json()
