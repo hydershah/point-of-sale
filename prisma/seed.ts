@@ -87,7 +87,7 @@ async function main() {
       address: "123 Main Street, City, State 12345",
       status: "ACTIVE",
       businessType: "COFFEE_SHOP",
-      ...(coffeeShopTemplate?.id ? { businessTemplateId: coffeeShopTemplate.id } : {}),
+      businessTemplateId: coffeeShopTemplate?.id || null,
       updatedAt: new Date(),
       subscriptions: {
         connect: {
