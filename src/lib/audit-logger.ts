@@ -1,6 +1,7 @@
 // Audit logging system for compliance and security
 import { prisma } from '@/lib/prisma'
 import { AuditAction } from '@prisma/client'
+import { nanoid } from 'nanoid'
 
 interface AuditLogData {
   tenantId: string
@@ -21,6 +22,7 @@ export async function createAuditLog(data: AuditLogData): Promise<void> {
   try {
     await prisma.audit_logs.create({
       data: {
+        id: nanoid(),
         tenantId: data.tenantId,
         userId: data.userId,
         userEmail: data.userEmail,
