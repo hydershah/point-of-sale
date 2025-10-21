@@ -274,14 +274,14 @@ export async function getLiveOrderFeed(
   return prisma.orders.findMany({
     where: { tenantId },
     include: {
-      items: {
+      order_items: {
         include: {
-          product: {
+          products: {
             select: { name: true },
           },
         },
       },
-      user: {
+      users: {
         select: { name: true },
       },
     },
