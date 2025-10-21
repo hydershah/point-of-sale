@@ -30,7 +30,10 @@ export default function LoginPage() {
         redirect: false,
       })
 
+      console.log('SignIn result:', result)
+
       if (result?.error) {
+        console.error('Login error from NextAuth:', result.error)
         const errorMsg = "Invalid email or password. Please check your credentials and try again."
         setError(errorMsg)
         toast({
@@ -39,16 +42,36 @@ export default function LoginPage() {
           variant: "destructive",
         })
         setLoading(false)
-      } else if (result?.ok) {
+        return
+      }
+
+      if (result?.ok) {
         setError("")
-        toast({
-          title: "Success",
-          description: "Logged in successfully",
-        })
+        console.log('Login successful, fetching session...')
 
         // Fetch session to determine user role
         const response = await fetch("/api/auth/session")
         const session = await response.json()
+
+        console.log('Session:', session)
+
+        if (!session || !session.user) {
+          console.error('No session found after login')
+          const errorMsg = "Login succeeded but session not created. Please try again."
+          setError(errorMsg)
+          toast({
+            title: "Error",
+            description: errorMsg,
+            variant: "destructive",
+          })
+          setLoading(false)
+          return
+        }
+
+        toast({
+          title: "Success",
+          description: "Logged in successfully",
+        })
 
         const clearTenantCookie = () => {
           document.cookie = "tenant_subdomain=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
@@ -57,14 +80,26 @@ export default function LoginPage() {
         // Redirect based on user role
         if (session?.user?.role === "SUPER_ADMIN") {
           clearTenantCookie()
+          console.log('Redirecting to super-admin dashboard')
           window.location.href = "/super-admin/dashboard"
         } else {
           const tenantSubdomain = session?.user?.tenantSubdomain
           if (tenantSubdomain) {
             document.cookie = `tenant_subdomain=${tenantSubdomain}; path=/; max-age=${60 * 60 * 24 * 30}`
           }
+          console.log('Redirecting to tenant dashboard')
           window.location.href = "/dashboard"
         }
+      } else {
+        console.error('Unexpected result from signIn:', result)
+        const errorMsg = "An unexpected error occurred. Please try again."
+        setError(errorMsg)
+        toast({
+          title: "Error",
+          description: errorMsg,
+          variant: "destructive",
+        })
+        setLoading(false)
       }
     } catch (error) {
       console.error("Login error:", error)
