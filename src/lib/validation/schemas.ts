@@ -202,7 +202,18 @@ export const createDiscountSchema = z.object({
     path: ["endDate"],
   })
 
-export const updateDiscountSchema = createDiscountSchema.partial()
+export const updateDiscountSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  code: z.string().min(1).max(50).toUpperCase().optional(),
+  type: z.enum(["PERCENTAGE", "FIXED_AMOUNT"]).optional(),
+  value: positiveNumberSchema.optional(),
+  minimumPurchase: z.number().min(0).default(0).optional(),
+  maxUses: z.number().int().positive().optional(),
+  usesCount: z.number().int().min(0).default(0).optional(),
+  startDate: dateSchema.optional(),
+  endDate: dateSchema.optional(),
+  isActive: z.boolean().default(true).optional(),
+})
 
 // ========================================
 // TABLE
