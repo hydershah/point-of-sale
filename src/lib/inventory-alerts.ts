@@ -1,6 +1,7 @@
 // Real-time inventory alert system
 import { prisma } from '@/lib/prisma'
 import { AlertStatus } from '@prisma/client'
+import { nanoid } from 'nanoid'
 
 // Check if product stock is below threshold and create alert
 export async function checkInventoryLevel(
@@ -38,12 +39,14 @@ export async function checkInventoryLevel(
         // Create new alert
         await prisma.inventory_alerts.create({
           data: {
+            id: nanoid(),
             tenantId,
             productId,
             productName: product.name,
             currentStock: product.stock,
             threshold: product.lowStockAlert,
             status: AlertStatus.PENDING,
+            updatedAt: new Date(),
           },
         })
 
