@@ -244,7 +244,7 @@ export async function seedTenantInventory(tenantId: string, businessType: Busine
 
   // Create categories and products
   let sortOrder = 0
-  for (const [categoryName, products] of categoriesMap) {
+  for (const [categoryName, products] of Array.from(categoriesMap.entries())) {
     // Create category
     const category = await prisma.categories.create({
       data: {
