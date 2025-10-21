@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { getCurrentTenant } from "@/lib/tenant"
+import { nanoid } from "nanoid"
 
 export async function GET(req: NextRequest) {
   try {
@@ -112,6 +113,7 @@ export async function PUT(req: NextRequest) {
         printerPort: parsedPrinterPort,
       },
       create: {
+        id: nanoid(),
         tenantId: tenant.id,
         currency,
         currencySymbol,
@@ -121,6 +123,7 @@ export async function PUT(req: NextRequest) {
         receiptFooter,
         printerIp,
         printerPort: parsedPrinterPort,
+        updatedAt: new Date(),
       },
     })
 
