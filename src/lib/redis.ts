@@ -5,7 +5,7 @@
 // Mock Redis type for TypeScript
 type RedisClient = {
   get: <T>(key: string) => Promise<T | null>
-  setex: (key: string, seconds: number, value: string) => Promise<void>
+  setex: (key: string, seconds: number, value: string | number) => Promise<void>
   del: (...keys: string[]) => Promise<number>
   keys: (pattern: string) => Promise<string[]>
   ttl: (key: string) => Promise<number>
