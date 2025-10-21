@@ -176,7 +176,7 @@ export function withMiddleware(handler: ApiHandler, options: MiddlewareOptions =
 
         // Sanitize body
         if (options.sanitizeBody && body && typeof body === "object") {
-          body = sanitizeObject(body)
+          body = sanitizeObject(body as Record<string, unknown>)
         }
 
         // Validate body
