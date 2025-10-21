@@ -103,7 +103,7 @@ export default function TablesPage() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground mb-4">
-                This feature is not enabled for your tenant. Enable "Table Management" in settings to use this page.
+                This feature is not enabled for your tenant. Enable &quot;Table Management&quot; in settings to use this page.
               </p>
               <Button asChild>
                 <Link href="/settings/features">Go to Feature Settings</Link>

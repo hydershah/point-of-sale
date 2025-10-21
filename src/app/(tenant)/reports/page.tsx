@@ -102,7 +102,7 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground mb-4">
-                Reports are disabled for your tenant. Enable "Basic Reports" in Feature Settings to access analytics.
+                Reports are disabled for your tenant. Enable &quot;Basic Reports&quot; in Feature Settings to access analytics.
               </p>
               <Button asChild>
                 <Link href="/settings/features">Go to Feature Settings</Link>
