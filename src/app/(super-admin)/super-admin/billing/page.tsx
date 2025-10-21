@@ -1,3 +1,4 @@
+import type { SubscriptionStatus } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -125,15 +126,15 @@ export default async function BillingPage() {
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Trial</span>
+                <span className="text-sm font-medium">Trialing</span>
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{stats.statusBreakdown.TRIAL}</Badge>
+                  <Badge variant="secondary">{stats.statusBreakdown.TRIALING}</Badge>
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Expired</span>
+                <span className="text-sm font-medium">Past Due</span>
                 <div className="flex items-center gap-2">
-                  <Badge variant="destructive">{stats.statusBreakdown.EXPIRED}</Badge>
+                  <Badge variant="destructive">{stats.statusBreakdown.PAST_DUE}</Badge>
                 </div>
               </div>
               <div className="flex items-center justify-between">
@@ -164,15 +165,7 @@ export default async function BillingPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-1">
                       <p className="font-medium">{tenant?.name || "No Tenant"}</p>
-                      <Badge
-                        variant={
-                          subscription.status === "ACTIVE"
-                            ? "default"
-                            : subscription.status === "TRIAL"
-                            ? "secondary"
-                            : "outline"
-                        }
-                      >
+                      <Badge variant={getStatusVariant(subscription.status)}>
                         {subscription.status}
                       </Badge>
                       <Badge variant="outline">{subscription.plan}</Badge>
@@ -238,8 +231,8 @@ async function getBillingStats() {
 
   const statusBreakdown = {
     ACTIVE: statusCounts.find((s) => s.status === "ACTIVE")?._count || 0,
-    TRIAL: statusCounts.find((s) => s.status === "TRIAL")?._count || 0,
-    EXPIRED: statusCounts.find((s) => s.status === "EXPIRED")?._count || 0,
+    TRIALING: statusCounts.find((s) => s.status === "TRIALING")?._count || 0,
+    PAST_DUE: statusCounts.find((s) => s.status === "PAST_DUE")?._count || 0,
     CANCELLED: statusCounts.find((s) => s.status === "CANCELLED")?._count || 0,
   }
 
@@ -262,5 +255,19 @@ async function getBillingStats() {
     expiringSoon,
     planBreakdown,
     statusBreakdown,
+  }
+}
+
+function getStatusVariant(status: SubscriptionStatus) {
+  switch (status) {
+    case "ACTIVE":
+      return "default"
+    case "TRIALING":
+      return "secondary"
+    case "PAST_DUE":
+      return "destructive"
+    case "CANCELLED":
+    default:
+      return "outline"
   }
 }
