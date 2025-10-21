@@ -171,7 +171,7 @@ export async function GET(req: NextRequest) {
 
     const tenants = await prisma.tenants.findMany({
       include: {
-        subscription: true,
+        subscriptions: true,
         _count: {
           select: {
             users: true,
