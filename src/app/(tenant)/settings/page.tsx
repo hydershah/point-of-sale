@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/components/ui/use-toast"
 import { Badge } from "@/components/ui/badge"
 
+export const dynamic = 'force-dynamic'
+
 interface Settings {
   businessName: string
   email: string

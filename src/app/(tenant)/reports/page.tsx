@@ -9,6 +9,8 @@ import { formatCurrency, formatDate } from "@/lib/utils"
 import { FeatureGate } from "@/components/feature-gate"
 import Link from "next/link"
 
+export const dynamic = 'force-dynamic'
+
 interface ReportData {
   summary: {
     totalSales: number

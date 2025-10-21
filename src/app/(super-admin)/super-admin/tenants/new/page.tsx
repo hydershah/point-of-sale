@@ -11,6 +11,8 @@ import { useToast } from "@/components/ui/use-toast"
 import { slugify } from "@/lib/utils"
 import { Upload, X } from "lucide-react"
 
+export const dynamic = 'force-dynamic'
+
 export default function NewTenantPage() {
   const [loading, setLoading] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)

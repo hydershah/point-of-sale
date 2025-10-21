@@ -10,6 +10,8 @@ import { Search, Printer, Eye, XCircle } from "lucide-react"
 import { formatCurrency, formatDateTime } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
 
+export const dynamic = 'force-dynamic'
+
 interface Order {
   id: string
   orderNumber: number

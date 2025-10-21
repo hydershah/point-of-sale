@@ -17,6 +17,8 @@ import { useFeature } from "@/hooks/use-features"
 import { FeatureGate } from "@/components/feature-gate"
 import Link from "next/link"
 
+export const dynamic = 'force-dynamic'
+
 interface Product {
   id: string
   name: string

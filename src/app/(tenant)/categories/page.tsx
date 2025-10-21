@@ -9,6 +9,8 @@ import { Plus, Trash2, Edit, Save, X } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { ConfirmationDialog } from "@/components/confirmation-dialog"
 
+export const dynamic = 'force-dynamic'
+
 interface Category {
   id: string
   name: string

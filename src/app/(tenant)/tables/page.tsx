@@ -10,6 +10,8 @@ import { formatCurrency } from "@/lib/utils"
 import { FeatureGate } from "@/components/feature-gate"
 import Link from "next/link"
 
+export const dynamic = 'force-dynamic'
+
 interface Table {
   id: string
   name: string
