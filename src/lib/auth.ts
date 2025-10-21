@@ -12,61 +12,77 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null
-        }
-
-        const email = credentials.email
-        const password = credentials.password
-
-        // Check if this is a super admin login
-        const superAdmin = await prisma.super_admins.findUnique({
-          where: { email },
-        })
-
-        if (superAdmin) {
-          const isValid = await bcrypt.compare(password, superAdmin.password)
-          if (!isValid) {
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.log('Missing credentials')
             return null
           }
 
-          return {
-            id: superAdmin.id,
-            email: superAdmin.email,
-            name: superAdmin.name,
-            role: 'SUPER_ADMIN',
-            tenantId: null,
-            tenantSubdomain: null,
+          const email = credentials.email
+          const password = credentials.password
+
+          console.log('Attempting login for:', email)
+
+          // Check if this is a super admin login
+          const superAdmin = await prisma.super_admins.findUnique({
+            where: { email },
+          })
+
+          if (superAdmin) {
+            console.log('Found super admin:', email)
+            const isValid = await bcrypt.compare(password, superAdmin.password)
+            if (!isValid) {
+              console.log('Invalid password for super admin:', email)
+              return null
+            }
+
+            console.log('Super admin login successful:', email)
+            return {
+              id: superAdmin.id,
+              email: superAdmin.email,
+              name: superAdmin.name,
+              role: 'SUPER_ADMIN',
+              tenantId: null,
+              tenantSubdomain: null,
+            }
           }
-        }
 
-        // Try to find tenant user by email
-        const user = await prisma.users.findFirst({
-          where: {
-            email,
-            isActive: true,
-          },
-          include: {
-            tenants: true,
-          },
-        })
+          // Try to find tenant user by email
+          console.log('Checking tenant users for:', email)
+          const user = await prisma.users.findFirst({
+            where: {
+              email,
+              isActive: true,
+            },
+            include: {
+              tenants: true,
+            },
+          })
 
-        if (!user) {
+          if (!user) {
+            console.log('No user found for:', email)
+            return null
+          }
+
+          console.log('Found user:', email, 'Role:', user.role)
+          const isValid = await bcrypt.compare(password, user.password)
+          if (!isValid) {
+            console.log('Invalid password for user:', email)
+            return null
+          }
+
+          console.log('User login successful:', email)
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            tenantId: user.tenantId,
+            tenantSubdomain: user.tenants?.subdomain || null,
+          }
+        } catch (error) {
+          console.error('Error in authorize:', error)
           return null
-        }
-
-        const isValid = await bcrypt.compare(password, user.password)
-        if (!isValid) {
-          return null
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          tenantId: user.tenantId,
-          tenantSubdomain: user.tenants?.subdomain || null,
         }
       },
     }),
