@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Building2, Users, DollarSign, TrendingUp } from "lucide-react"
 
+export const dynamic = 'force-dynamic'
+
 export default async function SuperAdminDashboard() {
   const stats = await getStats()
 
