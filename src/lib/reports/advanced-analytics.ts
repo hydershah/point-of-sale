@@ -57,9 +57,9 @@ export async function getProfitMarginReport(
       },
     },
     include: {
-      items: {
+      order_items: {
         include: {
-          product: {
+          products: {
             select: { cost: true },
           },
         },
@@ -73,8 +73,8 @@ export async function getProfitMarginReport(
   for (const order of orders) {
     totalRevenue += order.total
 
-    for (const item of order.items) {
-      const itemCost = (item.product?.cost || 0) * item.quantity
+    for (const item of order.order_items) {
+      const itemCost = (item.products?.cost || 0) * item.quantity
       totalCost += itemCost
     }
   }
