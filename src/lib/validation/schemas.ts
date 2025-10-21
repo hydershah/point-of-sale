@@ -304,7 +304,8 @@ export const dateRangeSchema = z.object({
   })
 
 export const salesReportSchema = z.object({
-  ...dateRangeSchema.shape,
+  startDate: dateSchema,
+  endDate: dateSchema,
   groupBy: z.enum(["day", "week", "month", "product", "category", "employee"]).optional(),
 })
 
