@@ -1,17 +1,32 @@
 // Input sanitization to prevent XSS and injection attacks
-import DOMPurify from 'isomorphic-dompurify'
+// TODO: Install isomorphic-dompurify package for proper sanitization
+// import DOMPurify from 'isomorphic-dompurify'
 
 // Sanitize HTML content
 export function sanitizeHtml(dirty: string): string {
-  return DOMPurify.sanitize(dirty, {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br'],
-    ALLOWED_ATTR: ['href'],
-  })
+  // return DOMPurify.sanitize(dirty, {
+  //   ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br'],
+  //   ALLOWED_ATTR: ['href'],
+  // })
+  // Temporary: basic HTML entity encoding until DOMPurify is installed
+  return dirty
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
 }
 
 // Sanitize plain text (remove HTML tags)
 export function sanitizeText(input: string): string {
-  return DOMPurify.sanitize(input, { ALLOWED_TAGS: [] })
+  // return DOMPurify.sanitize(input, { ALLOWED_TAGS: [] })
+  // Temporary: basic HTML entity encoding until DOMPurify is installed
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
 }
 
 // Sanitize object recursively
