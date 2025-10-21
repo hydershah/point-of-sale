@@ -281,7 +281,7 @@ export function isBluetoothSupported(): boolean {
 
 // Get list of paired Bluetooth devices
 export async function getPairedBluetoothDevices(): Promise<BluetoothDevice[]> {
-  if (!isBluetoothSupported()) {
+  if (!isBluetoothSupported() || !navigator.bluetooth) {
     return []
   }
 
