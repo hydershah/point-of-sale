@@ -100,11 +100,7 @@ export async function POST(req: NextRequest) {
         status: "TRIAL",
         updatedAt: now,
         businessTemplateId: templateId || null,
-        subscriptions: {
-          connect: {
-            id: subscription.id,
-          },
-        },
+        subscriptionId: subscription.id,
         tenant_settings: {
           create: {
             id: randomUUID(),
