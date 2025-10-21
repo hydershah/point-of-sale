@@ -11,6 +11,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Loader2, Crown } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export default function SuperAdminTenantFeaturesPage({ params }: { params: { id: string } }) {
   const tenantId = params.id
   const router = useRouter()
