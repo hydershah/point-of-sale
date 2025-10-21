@@ -100,7 +100,7 @@ export async function getTopProductsByProfit(
 ): Promise<ProductPerformance[]> {
   const orderItems = await prisma.order_items.findMany({
     where: {
-      order: {
+      orders: {
         tenantId,
         status: OrderStatus.COMPLETED,
         createdAt: {
@@ -110,7 +110,7 @@ export async function getTopProductsByProfit(
       },
     },
     include: {
-      product: {
+      products: {
         select: {
           id: true,
           name: true,
@@ -124,11 +124,11 @@ export async function getTopProductsByProfit(
   const productMap = new Map<string, ProductPerformance>()
 
   for (const item of orderItems) {
-    const productId = item.product.id
+    const productId = item.products.id
     const existing = productMap.get(productId)
 
     const revenue = item.subtotal
-    const cost = (item.product.cost || 0) * item.quantity
+    const cost = (item.products.cost || 0) * item.quantity
     const profit = revenue - cost
     const profitMargin = revenue > 0 ? (profit / revenue) * 100 : 0
 
@@ -142,7 +142,7 @@ export async function getTopProductsByProfit(
     } else {
       productMap.set(productId, {
         productId,
-        productName: item.product.name,
+        productName: item.products.name,
         quantitySold: item.quantity,
         revenue,
         cost,
@@ -218,7 +218,7 @@ export async function getCategoryPerformance(
 ): Promise<CategoryPerformance[]> {
   const orderItems = await prisma.order_items.findMany({
     where: {
-      order: {
+      orders: {
         tenantId,
         status: OrderStatus.COMPLETED,
         createdAt: {
@@ -228,11 +228,11 @@ export async function getCategoryPerformance(
       },
     },
     include: {
-      product: {
+      products: {
         select: {
           categoryId: true,
           cost: true,
-          category: {
+          categories: {
             select: {
               id: true,
               name: true,
@@ -252,13 +252,13 @@ export async function getCategoryPerformance(
   }>()
 
   for (const item of orderItems) {
-    if (!item.product.categoryId || !item.product.category) continue
+    if (!item.products.categoryId || !item.products.categories) continue
 
-    const categoryId = item.product.categoryId
+    const categoryId = item.products.categoryId
     const existing = categoryMap.get(categoryId)
 
     const revenue = item.subtotal
-    const cost = (item.product.cost || 0) * item.quantity
+    const cost = (item.products.cost || 0) * item.quantity
 
     if (existing) {
       existing.revenue += revenue
@@ -266,7 +266,7 @@ export async function getCategoryPerformance(
       existing.orderCount += 1
     } else {
       categoryMap.set(categoryId, {
-        name: item.product.category.name,
+        name: item.products.categories.name,
         revenue,
         cost,
         orderCount: 1,
