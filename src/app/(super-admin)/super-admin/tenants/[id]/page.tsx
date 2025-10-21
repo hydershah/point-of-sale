@@ -1,3 +1,4 @@
+import Image from "next/image"
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -122,7 +123,14 @@ export default async function TenantDetailsPage({
           {tenant.logo && (
             <div className="flex items-center gap-2">
               <span>Logo:</span>
-              <img src={tenant.logo} alt="Logo" className="h-10 w-10 object-contain border rounded" />
+              <Image
+                src={tenant.logo}
+                alt="Logo"
+                width={40}
+                height={40}
+                className="h-10 w-10 object-contain border rounded"
+                unoptimized
+              />
             </div>
           )}
           {tenant.primaryColor && (

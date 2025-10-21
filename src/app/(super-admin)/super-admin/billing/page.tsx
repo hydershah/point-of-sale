@@ -153,41 +153,45 @@ export default async function BillingPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {stats.subscriptions.map((subscription) => (
-              <div
-                key={subscription.id}
-                className="flex items-center justify-between p-4 border rounded-lg"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-1">
-                    <p className="font-medium">{subscription.tenant?.name || "No Tenant"}</p>
-                    <Badge
-                      variant={
-                        subscription.status === "ACTIVE"
-                          ? "default"
-                          : subscription.status === "TRIAL"
-                          ? "secondary"
-                          : "outline"
-                      }
-                    >
-                      {subscription.status}
-                    </Badge>
-                    <Badge variant="outline">{subscription.plan}</Badge>
+            {stats.subscriptions.map((subscription) => {
+              const tenant = subscription.tenants
+
+              return (
+                <div
+                  key={subscription.id}
+                  className="flex items-center justify-between p-4 border rounded-lg"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-1">
+                      <p className="font-medium">{tenant?.name || "No Tenant"}</p>
+                      <Badge
+                        variant={
+                          subscription.status === "ACTIVE"
+                            ? "default"
+                            : subscription.status === "TRIAL"
+                            ? "secondary"
+                            : "outline"
+                        }
+                      >
+                        {subscription.status}
+                      </Badge>
+                      <Badge variant="outline">{subscription.plan}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {tenant?.subdomain || "N/A"}
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {subscription.tenant?.subdomain || "N/A"}
-                  </p>
+                  <div className="text-right">
+                    <p className="font-bold text-lg">
+                      ${subscription.amount.toFixed(2)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      per {subscription.interval}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-lg">
-                    ${subscription.amount.toFixed(2)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    per {subscription.interval}
-                  </p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
 
             {stats.subscriptions.length === 0 && (
               <div className="text-center py-12 text-muted-foreground">
@@ -205,7 +209,7 @@ async function getBillingStats() {
   const [subscriptions, statusCounts, planCounts] = await Promise.all([
     prisma.subscriptions.findMany({
       include: {
-        tenant: {
+        tenants: {
           select: {
             name: true,
             subdomain: true,
