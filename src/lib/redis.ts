@@ -1,14 +1,17 @@
 // Redis caching layer for improved performance
-import { Redis } from '@upstash/redis'
+// TODO: Install @upstash/redis package for caching
+// import { Redis } from '@upstash/redis'
 
 // Initialize Redis client
 // Using Upstash Redis for serverless-friendly caching
-const redis = process.env.REDIS_URL
-  ? new Redis({
-      url: process.env.REDIS_URL,
-      token: process.env.REDIS_TOKEN || '',
-    })
-  : null
+// Temporarily disabled until @upstash/redis is installed
+const redis = null
+// const redis = process.env.REDIS_URL
+//   ? new Redis({
+//       url: process.env.REDIS_URL,
+//       token: process.env.REDIS_TOKEN || '',
+//     })
+//   : null
 
 // Cache TTL (Time To Live) in seconds
 const CACHE_TTL = {
