@@ -43,6 +43,7 @@ export default function SuperAdminTenantFeaturesPage({ params }: { params: { id:
 
   useEffect(() => {
     load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const onToggle = async (featureKey: string, enable: boolean) => {

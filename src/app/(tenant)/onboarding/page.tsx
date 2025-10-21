@@ -44,14 +44,14 @@ export default function OnboardingPage() {
       <div className="mb-8 text-center">
         <h1 className="text-4xl font-bold mb-2">Welcome to Your POS System</h1>
         <p className="text-xl text-muted-foreground">
-          Let's customize the system for your business
+          Let&apos;s customize the system for your business
         </p>
       </div>
 
       <div className="mb-8">
         <h2 className="text-2xl font-semibold mb-4">What type of business do you run?</h2>
         <p className="text-muted-foreground">
-          Choose the option that best describes your business. We'll configure the perfect set of features for you.
+          Choose the option that best describes your business. We&apos;ll configure the perfect set of features for you.
         </p>
       </div>
 
