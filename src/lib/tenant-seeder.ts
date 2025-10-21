@@ -1,5 +1,6 @@
 import { prisma } from './prisma'
 import { BusinessType } from '@prisma/client'
+import { nanoid } from 'nanoid'
 
 interface SampleProduct {
   name: string
@@ -248,10 +249,12 @@ export async function seedTenantInventory(tenantId: string, businessType: Busine
     // Create category
     const category = await prisma.categories.create({
       data: {
+        id: nanoid(),
         tenantId,
         name: categoryName,
         description: `${categoryName} category`,
         sortOrder: sortOrder++,
+        updatedAt: new Date(),
       },
     })
 
@@ -259,6 +262,7 @@ export async function seedTenantInventory(tenantId: string, businessType: Busine
     for (const product of products) {
       await prisma.products.create({
         data: {
+          id: nanoid(),
           tenantId,
           name: product.name,
           description: product.description,
@@ -272,6 +276,7 @@ export async function seedTenantInventory(tenantId: string, businessType: Busine
           isFavorite: false,
           createdById: adminUserId,
           lowStockAlert: product.trackStock ? 10 : undefined,
+          updatedAt: new Date(),
         },
       })
     }
