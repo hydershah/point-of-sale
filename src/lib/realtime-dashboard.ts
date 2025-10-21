@@ -113,9 +113,9 @@ export async function getRealtimeSalesMetrics(
       createdAt: { gte: startOfDay },
     },
     include: {
-      items: {
+      order_items: {
         include: {
-          product: {
+          products: {
             select: { name: true },
           },
         },
@@ -143,13 +143,13 @@ export async function getRealtimeSalesMetrics(
   const productSales = new Map<string, { name: string; quantity: number }>()
 
   for (const order of todayOrders) {
-    for (const item of order.items) {
+    for (const item of order.order_items) {
       const existing = productSales.get(item.productId)
       if (existing) {
         existing.quantity += item.quantity
       } else {
         productSales.set(item.productId, {
-          name: item.product.name,
+          name: item.products.name,
           quantity: item.quantity,
         })
       }
