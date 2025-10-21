@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
       },
       include: {
         order_items: true,
+        payments: true,
       },
     })
 
@@ -98,14 +99,17 @@ export async function GET(req: NextRequest) {
       return acc
     }, {} as Record<string, { date: string; sales: number; orders: number }>)
 
-    // Get payment methods breakdown (using paymentMethod from orders)
+    // Get payment methods breakdown (using payments from orders)
     const paymentMethods = orders.reduce((acc, order) => {
-      const method = order.paymentMethod || "UNKNOWN"
-      if (!acc[method]) {
-        acc[method] = { method, count: 0, total: 0 }
-      }
-      acc[method].count += 1
-      acc[method].total += order.total
+      // An order can have multiple payments, so we process each payment
+      order.payments.forEach(payment => {
+        const method = payment.method || "UNKNOWN"
+        if (!acc[method]) {
+          acc[method] = { method, count: 0, total: 0 }
+        }
+        acc[method].count += 1
+        acc[method].total += payment.amount
+      })
       return acc
     }, {} as Record<string, { method: string; count: number; total: number }>)
 
