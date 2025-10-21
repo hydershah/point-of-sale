@@ -1,5 +1,6 @@
 // Image optimization utilities
-import sharp from 'sharp'
+// TODO: Install sharp package for image optimization
+// import sharp from 'sharp'
 
 export interface ImageOptimizationOptions {
   width?: number
@@ -9,41 +10,43 @@ export interface ImageOptimizationOptions {
 }
 
 // Optimize image buffer
+// TODO: Uncomment when sharp is installed
 export async function optimizeImage(
   buffer: Buffer,
   options: ImageOptimizationOptions = {}
 ): Promise<Buffer> {
-  const {
-    width,
-    height,
-    quality = 80,
-    format = 'webp',
-  } = options
+  // const {
+  //   width,
+  //   height,
+  //   quality = 80,
+  //   format = 'webp',
+  // } = options
 
-  let image = sharp(buffer)
+  // let image = sharp(buffer)
 
-  // Resize if dimensions provided
-  if (width || height) {
-    image = image.resize(width, height, {
-      fit: 'inside',
-      withoutEnlargement: true,
-    })
-  }
+  // // Resize if dimensions provided
+  // if (width || height) {
+  //   image = image.resize(width, height, {
+  //     fit: 'inside',
+  //     withoutEnlargement: true,
+  //   })
+  // }
 
-  // Convert to specified format with quality
-  switch (format) {
-    case 'webp':
-      image = image.webp({ quality })
-      break
-    case 'jpeg':
-      image = image.jpeg({ quality, progressive: true })
-      break
-    case 'png':
-      image = image.png({ quality, progressive: true })
-      break
-  }
+  // // Convert to specified format with quality
+  // switch (format) {
+  //   case 'webp':
+  //     image = image.webp({ quality })
+  //     break
+  //   case 'jpeg':
+  //     image = image.jpeg({ quality, progressive: true })
+  //     break
+  //   case 'png':
+  //     image = image.png({ quality, progressive: true })
+  //     break
+  // }
 
-  return image.toBuffer()
+  // return image.toBuffer()
+  throw new Error('Sharp package not installed. Image optimization is not available.')
 }
 
 // Generate multiple image sizes (thumbnails)
@@ -75,14 +78,16 @@ export const PRODUCT_IMAGE_VARIANTS = [
 ]
 
 // Get image dimensions
+// TODO: Uncomment when sharp is installed
 export async function getImageDimensions(
   buffer: Buffer
 ): Promise<{ width: number; height: number }> {
-  const metadata = await sharp(buffer).metadata()
-  return {
-    width: metadata.width || 0,
-    height: metadata.height || 0,
-  }
+  // const metadata = await sharp(buffer).metadata()
+  // return {
+  //   width: metadata.width || 0,
+  //   height: metadata.height || 0,
+  // }
+  throw new Error('Sharp package not installed. Image dimension detection is not available.')
 }
 
 // Validate image file
