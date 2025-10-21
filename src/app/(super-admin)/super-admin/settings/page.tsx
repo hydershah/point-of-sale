@@ -9,6 +9,8 @@ import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
 import { Shield, Key, Bell, Database, Mail } from "lucide-react"
 
+export const dynamic = 'force-dynamic'
+
 export default function SettingsPage() {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
