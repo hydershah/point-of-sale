@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -257,10 +258,13 @@ export default function NewTenantPage() {
                 <div className="flex items-center gap-4">
                   {logoPreview ? (
                     <div className="relative">
-                      <img
+                      <Image
                         src={logoPreview}
                         alt="Logo preview"
+                        width={80}
+                        height={80}
                         className="h-20 w-20 object-contain border rounded"
+                        unoptimized
                       />
                       <button
                         type="button"
@@ -388,4 +392,3 @@ export default function NewTenantPage() {
     </div>
   )
 }
-

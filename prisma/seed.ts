@@ -89,11 +89,7 @@ async function main() {
       businessType: "COFFEE_SHOP",
       businessTemplateId: coffeeShopTemplate?.id || null,
       updatedAt: new Date(),
-      subscriptions: {
-        connect: {
-          id: subscription.id
-        }
-      },
+      subscriptionId: subscription.id,
       tenant_settings: {
         create: {
           id: nanoid(),
@@ -397,4 +393,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect()
   })
-
