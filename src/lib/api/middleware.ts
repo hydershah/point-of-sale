@@ -15,7 +15,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { logger } from "@/lib/logger"
 // import { rateLimit } from "@/lib/security/rate-limit" // TODO: Implement rate limiting
-import { sanitizeInput } from "@/lib/security/sanitize"
+import { sanitizeText } from "@/lib/security/sanitize"
 import { z } from "zod"
 import { validate, type ValidationResult } from "@/lib/validation/schemas"
 
@@ -272,7 +272,7 @@ function sanitizeObject(obj: Record<string, unknown>): Record<string, unknown> {
 
   for (const [key, value] of Object.entries(obj)) {
     if (typeof value === "string") {
-      result[key] = sanitizeInput(value)
+      result[key] = sanitizeText(value)
     } else if (Array.isArray(value)) {
       result[key] = value.map((item) => (typeof item === "object" && item !== null ? sanitizeObject(item as Record<string, unknown>) : item))
     } else if (typeof value === "object" && value !== null) {
