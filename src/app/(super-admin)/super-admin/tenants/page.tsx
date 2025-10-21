@@ -6,6 +6,8 @@ import { Plus } from "lucide-react"
 import Link from "next/link"
 import { formatDate } from "@/lib/utils"
 
+export const dynamic = 'force-dynamic'
+
 export default async function TenantsPage() {
   const tenants = await prisma.tenants.findMany({
     include: {

@@ -8,6 +8,8 @@ import { formatDate } from "@/lib/utils"
 import { Suspense } from "react"
 import TenantAdminControls from "./admin-controls"
 
+export const dynamic = 'force-dynamic'
+
 export default async function TenantDetailsPage({
   params,
 }: {
