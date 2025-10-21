@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getBusinessTypeTemplates } from '@/lib/features'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     const templates = await getBusinessTypeTemplates()
