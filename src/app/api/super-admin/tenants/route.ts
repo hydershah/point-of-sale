@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
         primaryColor: primaryColor || null,
         status: "TRIAL",
         updatedAt: now,
-        businessTemplateId: templateId,
+        businessTemplateId: templateId || null,
         subscriptions: {
           connect: {
             id: subscription.id,
