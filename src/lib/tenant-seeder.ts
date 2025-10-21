@@ -323,6 +323,7 @@ export async function seedTenantTables(tenantId: string, businessType: BusinessT
 export async function seedSampleCustomers(tenantId: string) {
   const customers = [
     {
+      id: nanoid(),
       tenantId,
       name: 'John Doe',
       email: 'john@example.com',
@@ -330,8 +331,10 @@ export async function seedSampleCustomers(tenantId: string) {
       loyaltyPoints: 150,
       totalSpent: 450.50,
       visitCount: 15,
+      updatedAt: new Date(),
     },
     {
+      id: nanoid(),
       tenantId,
       name: 'Jane Smith',
       email: 'jane@example.com',
@@ -339,8 +342,10 @@ export async function seedSampleCustomers(tenantId: string) {
       loyaltyPoints: 300,
       totalSpent: 890.75,
       visitCount: 28,
+      updatedAt: new Date(),
     },
     {
+      id: nanoid(),
       tenantId,
       name: 'Bob Johnson',
       email: 'bob@example.com',
@@ -348,6 +353,7 @@ export async function seedSampleCustomers(tenantId: string) {
       loyaltyPoints: 75,
       totalSpent: 210.00,
       visitCount: 8,
+      updatedAt: new Date(),
     },
   ]
 
