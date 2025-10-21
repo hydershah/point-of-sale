@@ -8,6 +8,8 @@ import { useBusinessTypes } from '@/hooks/use-features'
 import { Loader2, Check, ArrowRight, Star } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
+export const dynamic = 'force-dynamic'
+
 export default function OnboardingPage() {
   const { templates, isLoading } = useBusinessTypes()
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)

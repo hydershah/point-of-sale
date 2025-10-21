@@ -16,6 +16,8 @@ import { useFeatureCatalog, useTenantFeatures, useToggleFeature } from '@/hooks/
 import { Loader2, AlertCircle, CheckCircle2, Crown } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 
+export const dynamic = 'force-dynamic'
+
 export default function FeaturesPage() {
   const { catalog, isLoading: catalogLoading } = useFeatureCatalog()
   const { features, isLoading: featuresLoading, mutate } = useTenantFeatures()

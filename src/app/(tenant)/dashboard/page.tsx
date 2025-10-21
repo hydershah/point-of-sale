@@ -7,6 +7,8 @@ import { DollarSign, ShoppingCart, Package, Users } from "lucide-react"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { redirect } from "next/navigation"
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
   const tenant = await getCurrentTenant()
