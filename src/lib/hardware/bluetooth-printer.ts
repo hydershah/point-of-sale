@@ -31,7 +31,7 @@ export const ESC_POS_COMMANDS = {
 
 // Request Bluetooth printer
 export async function requestBluetoothPrinter(): Promise<BluetoothPrinterDevice> {
-  if (typeof navigator === 'undefined' || !('bluetooth' in navigator)) {
+  if (typeof navigator === 'undefined' || !('bluetooth' in navigator) || !navigator.bluetooth) {
     throw new Error('Web Bluetooth API not supported in this browser')
   }
 
