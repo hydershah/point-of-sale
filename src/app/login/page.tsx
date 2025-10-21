@@ -8,19 +8,20 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
-
-export const dynamic = 'force-dynamic'
+import { AlertCircle } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
   const router = useRouter()
   const { toast } = useToast()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setError("")
 
     try {
       const result = await signIn("credentials", {
@@ -30,13 +31,16 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
+        const errorMsg = "Invalid email or password. Please check your credentials and try again."
+        setError(errorMsg)
         toast({
-          title: "Error",
-          description: "Invalid email or password",
+          title: "Login Failed",
+          description: errorMsg,
           variant: "destructive",
         })
         setLoading(false)
       } else if (result?.ok) {
+        setError("")
         toast({
           title: "Success",
           description: "Logged in successfully",
@@ -64,9 +68,11 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error("Login error:", error)
+      const errorMsg = "An unexpected error occurred. Please try again."
+      setError(errorMsg)
       toast({
         title: "Error",
-        description: "Something went wrong",
+        description: errorMsg,
         variant: "destructive",
       })
       setLoading(false)
@@ -84,6 +90,12 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <p className="text-sm">{error}</p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
