@@ -301,10 +301,12 @@ export async function seedTenantTables(tenantId: string, businessType: BusinessT
 
   for (let i = 1; i <= tableCount; i++) {
     tables.push({
+      id: nanoid(),
       tenantId,
       name: `Table ${i}`,
       capacity: i % 3 === 0 ? 6 : i % 2 === 0 ? 4 : 2,
       status: 'AVAILABLE' as const,
+      updatedAt: new Date(),
     })
   }
 
