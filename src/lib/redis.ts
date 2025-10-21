@@ -2,10 +2,20 @@
 // TODO: Install @upstash/redis package for caching
 // import { Redis } from '@upstash/redis'
 
+// Mock Redis type for TypeScript
+type RedisClient = {
+  get: <T>(key: string) => Promise<T | null>
+  setex: (key: string, seconds: number, value: string) => Promise<void>
+  del: (...keys: string[]) => Promise<number>
+  keys: (pattern: string) => Promise<string[]>
+  ttl: (key: string) => Promise<number>
+  incr: (key: string) => Promise<number>
+} | null
+
 // Initialize Redis client
 // Using Upstash Redis for serverless-friendly caching
 // Temporarily disabled until @upstash/redis is installed
-const redis = null
+const redis: RedisClient = null
 // const redis = process.env.REDIS_URL
 //   ? new Redis({
 //       url: process.env.REDIS_URL,
