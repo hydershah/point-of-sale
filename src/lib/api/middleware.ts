@@ -243,7 +243,7 @@ export function withMiddleware(handler: ApiHandler, options: MiddlewareOptions =
       const status = response.status
       logger.apiResponse(method, path, status, duration, {
         userId: session?.user?.id,
-        tenantId: session?.user?.tenantId,
+        tenantId: session?.user?.tenantId || undefined,
       })
 
       return response
