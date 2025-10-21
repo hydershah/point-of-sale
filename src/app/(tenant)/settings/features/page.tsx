@@ -111,17 +111,17 @@ export default function FeaturesPage() {
       </Card>
 
       <Accordion type="multiple" className="space-y-4">
-        {catalog && Object.entries(catalog).map(([category, categoryFeatures]: [string, any[]]) => (
+        {catalog && Object.entries(catalog).map(([category, categoryFeatures]) => (
           <AccordionItem key={category} value={category} className="border rounded-lg">
             <AccordionTrigger className="px-4 hover:no-underline">
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold">{category.replace(/_/g, ' ')}</h3>
-                <Badge variant="secondary">{categoryFeatures.length}</Badge>
+                <Badge variant="secondary">{(categoryFeatures as any[]).length}</Badge>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-4 pb-4">
               <div className="space-y-4">
-                {categoryFeatures.map((feature) => (
+                {(categoryFeatures as any[]).map((feature) => (
                   <FeatureRow
                     key={feature.id}
                     feature={feature}
