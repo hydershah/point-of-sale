@@ -4,7 +4,9 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import bcrypt from "bcryptjs"
 import { randomUUID } from "crypto"
+import { revalidatePath } from "next/cache"
 import { initializeTenantFeatures } from "@/lib/features"
+import { seedDefaultCategories } from "@/lib/tenant-seeder"
 
 export const dynamic = 'force-dynamic'
 
@@ -129,6 +131,9 @@ export async function POST(req: NextRequest) {
       await initializeTenantFeatures(tenant.id, templateId)
     }
 
+    // Create default categories based on business type
+    await seedDefaultCategories(tenant.id, businessType)
+
     // Create admin user
     const hashedPassword = await bcrypt.hash(adminPassword, 10)
     await prisma.users.create({
@@ -145,6 +150,11 @@ export async function POST(req: NextRequest) {
     })
 
     // TODO: Send welcome email with login credentials
+
+    // Revalidate relevant super admin pages to reflect the new tenant immediately
+    revalidatePath("/super-admin/tenants")
+    revalidatePath("/super-admin/dashboard")
+    revalidatePath(`/super-admin/tenants/${tenant.id}`)
 
     return NextResponse.json({
       success: true,

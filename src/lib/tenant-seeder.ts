@@ -363,3 +363,49 @@ export async function seedSampleCustomers(tenantId: string) {
 
   return { customersCreated: customers.length }
 }
+
+/**
+ * Get default category names based on business type
+ */
+function getDefaultCategories(businessType: BusinessType): string[] {
+  switch (businessType) {
+    case 'RESTAURANT':
+      return ['Appetizers', 'Main Course', 'Sides', 'Desserts', 'Beverages']
+    case 'COFFEE_SHOP':
+      return ['Coffee', 'Tea', 'Pastries', 'Sandwiches', 'Beverages']
+    case 'RETAIL':
+      return ['Clothing', 'Footwear', 'Accessories', 'Electronics', 'Home & Living']
+    case 'TAKEAWAY':
+      return ['Combos', 'Main Course', 'Sides', 'Appetizers', 'Beverages', 'Desserts']
+    case 'MIXED':
+      return ['Food', 'Beverages', 'Desserts', 'Retail Items', 'Specials']
+    default:
+      return ['General', 'Products', 'Services']
+  }
+}
+
+/**
+ * Create default categories for a new tenant (without products)
+ * This is called automatically when a tenant is created
+ */
+export async function seedDefaultCategories(tenantId: string, businessType: BusinessType) {
+  const categoryNames = getDefaultCategories(businessType)
+  
+  const categories = []
+  for (let i = 0; i < categoryNames.length; i++) {
+    categories.push({
+      id: nanoid(),
+      tenantId,
+      name: categoryNames[i],
+      sortOrder: i,
+      updatedAt: new Date(),
+    })
+  }
+
+  await prisma.categories.createMany({
+    data: categories,
+  })
+
+  console.log(`✅ Created ${categories.length} default categories for tenant ${tenantId}`)
+  return { categoriesCreated: categories.length }
+}
