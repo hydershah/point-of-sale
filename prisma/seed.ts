@@ -33,13 +33,19 @@ async function main() {
   }
 
   // Create Super Admin
+  const hashedSuperAdminPassword = await bcrypt.hash(SUPER_ADMIN_PASSWORD, 12)
+
   const superAdmin = await prisma.super_admins.upsert({
     where: { email: SUPER_ADMIN_EMAIL },
-    update: {},
+    update: {
+      password: hashedSuperAdminPassword,
+      name: "Super Admin",
+      updatedAt: new Date(),
+    },
     create: {
       id: nanoid(),
       email: SUPER_ADMIN_EMAIL,
-      password: await bcrypt.hash(SUPER_ADMIN_PASSWORD, 12),
+      password: hashedSuperAdminPassword,
       name: "Super Admin",
       updatedAt: new Date(),
     },
@@ -54,6 +60,27 @@ async function main() {
   }
 
   console.log("\n⚠️  Creating demo data (DEMO MODE ENABLED)...")
+
+  // Clean up existing demo tenant to keep seed idempotent
+  const existingDemoTenant = await prisma.tenants.findUnique({
+    where: { subdomain: "demo" },
+    select: { id: true, subscriptionId: true },
+  })
+
+  if (existingDemoTenant) {
+    console.log("Removing existing demo tenant and related data...")
+    await prisma.tenants.delete({
+      where: { id: existingDemoTenant.id },
+    })
+
+    if (existingDemoTenant.subscriptionId) {
+      await prisma.subscriptions.delete({
+        where: { id: existingDemoTenant.subscriptionId },
+      })
+    }
+
+    console.log("Existing demo tenant removed.")
+  }
 
   // Create Subscription for Demo Tenant
   const subscription = await prisma.subscriptions.create({

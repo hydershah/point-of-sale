@@ -8,19 +8,67 @@ import { formatDate } from "@/lib/utils"
 
 export const dynamic = 'force-dynamic'
 
+type TenantListItem = {
+  id: string
+  name: string
+  subdomain: string
+  status: string
+  businessType: string
+  createdAt: string
+  userCount: number
+  orderCount: number
+  subscriptionPlan: string | null
+}
+
 export default async function TenantsPage() {
-  const tenants = await prisma.tenants.findMany({
-    include: {
-      subscriptions: true,
-      _count: {
-        select: {
-          users: true,
-          orders: true,
+  let items: TenantListItem[] = []
+
+  try {
+    const tenants = await prisma.tenants.findMany({
+      include: {
+        subscriptions: true,
+        _count: {
+          select: {
+            users: true,
+            orders: true,
+          },
         },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  })
+      orderBy: { createdAt: "desc" },
+    })
+
+    items = tenants.map((tenant) => ({
+      id: tenant.id,
+      name: tenant.name,
+      subdomain: tenant.subdomain,
+      status: tenant.status,
+      businessType: tenant.businessType,
+      createdAt: tenant.createdAt.toISOString(),
+      userCount: tenant._count.users,
+      orderCount: tenant._count.orders,
+      subscriptionPlan: tenant.subscriptions?.plan ?? null,
+    }))
+  } catch (error) {
+    console.error("Error loading tenants:", error)
+    return (
+      <div className="p-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">Tenants</h1>
+          <p className="text-muted-foreground">
+            Manage all business tenants
+          </p>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-red-600">Failed to load tenants.</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Please check the database connection and try again.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="p-8">
@@ -41,11 +89,11 @@ export default async function TenantsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Tenants ({tenants.length})</CardTitle>
+          <CardTitle>All Tenants ({items.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {tenants.map((tenant) => (
+            {items.map((tenant) => (
               <div
                 key={tenant.id}
                 className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
@@ -64,15 +112,15 @@ export default async function TenantsPage() {
                     {tenant.subdomain}.yourdomain.com
                   </p>
                   <div className="flex gap-4 text-sm text-muted-foreground">
-                    <span>{tenant._count.users} users</span>
-                    <span>{tenant._count.orders} orders</span>
+                    <span>{tenant.userCount} users</span>
+                    <span>{tenant.orderCount} orders</span>
                     <span>Created {formatDate(tenant.createdAt)}</span>
                   </div>
                 </div>
                 <div className="text-right">
-                  {tenant.subscriptions && (
+                  {tenant.subscriptionPlan && (
                     <p className="text-sm font-medium mb-2">
-                      {tenant.subscriptions.plan} Plan
+                      {tenant.subscriptionPlan} Plan
                     </p>
                   )}
                   <Link href={`/super-admin/tenants/${tenant.id}`}>
@@ -84,7 +132,7 @@ export default async function TenantsPage() {
               </div>
             ))}
 
-            {tenants.length === 0 && (
+            {items.length === 0 && (
               <div className="text-center py-12 text-muted-foreground">
                 No tenants yet. Create your first tenant to get started.
               </div>

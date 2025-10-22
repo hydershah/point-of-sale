@@ -28,6 +28,13 @@ export async function POST(req: NextRequest) {
       where: { tenantId: tenant.id },
     })
 
+    const productIds = items.map((item: any) => item.productId)
+    const products = await prisma.products.findMany({
+      where: { id: { in: productIds } },
+    })
+
+    const productMap = new Map(products.map((product) => [product.id, product]))
+
     // Calculate order totals
     let subtotal = 0
     const orderItems: Array<{
@@ -40,11 +47,10 @@ export async function POST(req: NextRequest) {
       modifiers: any
       notes: string | null
     }> = []
+    const stockAdjustments = new Map<string, number>()
 
     for (const item of items) {
-      const product = await prisma.products.findUnique({
-        where: { id: item.productId },
-      })
+      const product = productMap.get(item.productId)
 
       if (!product || product.tenantId !== tenant.id) {
         return NextResponse.json(
@@ -53,27 +59,38 @@ export async function POST(req: NextRequest) {
         )
       }
 
-      // Check stock
-      if (product.trackStock && product.stock < item.quantity) {
-        return NextResponse.json(
-          { error: `Insufficient stock for ${product.name}` },
-          { status: 400 }
-        )
-      }
+      const quantity = Number(item.quantity) || 0
+      const price = Number(product.price)
 
-      const itemSubtotal = product.price * item.quantity
+      stockAdjustments.set(
+        product.id,
+        (stockAdjustments.get(product.id) || 0) + quantity
+      )
+
+      const itemSubtotal = price * quantity
       subtotal += itemSubtotal
 
       orderItems.push({
         id: nanoid(),
         productId: product.id,
         name: product.name,
-        price: product.price,
-        quantity: item.quantity,
+        price,
+        quantity,
         subtotal: itemSubtotal,
         modifiers: item.modifiers || null,
         notes: item.notes || null,
       })
+    }
+
+    for (const [productId, quantity] of stockAdjustments) {
+      const product = productMap.get(productId)
+
+      if (product?.trackStock && product.stock < quantity) {
+        return NextResponse.json(
+          { error: `Insufficient stock for ${product.name}` },
+          { status: 400 }
+        )
+      }
     }
 
     // Calculate tax
@@ -92,84 +109,70 @@ export async function POST(req: NextRequest) {
     const ticketId = `TKT-${nanoid(10)}`
 
     // Create order in transaction
-    const order = await prisma.$transaction(async (tx) => {
-      // Create order
-      const newOrder = await tx.orders.create({
-        data: {
-          id: nanoid(),
-          tenantId: tenant.id,
-          orderNumber,
-          ticketId,
-          type: type || "DINE_IN",
-          status: "PENDING",
-          userId: session.user.id,
-          customerId,
-          tableId,
-          notes,
-          subtotal,
-          tax,
-          total,
-          updatedAt: new Date(),
-          order_items: {
-            create: orderItems,
-          },
-          payments: {
-            create: {
-              id: nanoid(),
-              method: paymentMethod,
-              amount: total,
+    const order = await prisma.$transaction(
+      async (tx) => {
+        const completedAt = new Date()
+        const createdOrder = await tx.orders.create({
+          data: {
+            id: nanoid(),
+            tenantId: tenant.id,
+            orderNumber,
+            ticketId,
+            type: type || "DINE_IN",
+            status: "COMPLETED",
+            completedAt,
+            userId: session.user.id,
+            customerId,
+            tableId,
+            notes,
+            subtotal,
+            tax,
+            total,
+            updatedAt: completedAt,
+            order_items: {
+              create: orderItems,
             },
-          },
-        },
-        include: {
-          order_items: true,
-          payments: true,
-        },
-      })
-
-      // Update product stock
-      for (const item of items) {
-        const product = await tx.products.findUnique({
-          where: { id: item.productId },
-        })
-
-        if (product && product.trackStock) {
-          await tx.products.update({
-            where: { id: item.productId },
-            data: {
-              stock: {
-                decrement: item.quantity,
+            payments: {
+              create: {
+                id: nanoid(),
+                method: paymentMethod,
+                amount: total,
               },
             },
-          })
+          },
+        })
+
+        for (const [productId, quantity] of stockAdjustments) {
+          const product = productMap.get(productId)
+
+          if (product?.trackStock) {
+            await tx.products.update({
+              where: { id: productId },
+              data: {
+                stock: {
+                  decrement: quantity,
+                },
+              },
+            })
+          }
         }
-      }
 
-      // Create transaction record
-      await tx.transactions.create({
-        data: {
-          id: nanoid(),
-          tenantId: tenant.id,
-          type: "SALE",
-          amount: total,
-          description: `Order #${orderNumber}`,
-          referenceId: newOrder.id,
-          referenceType: "ORDER",
-        },
-      })
+        await tx.transactions.create({
+          data: {
+            id: nanoid(),
+            tenantId: tenant.id,
+            type: "SALE",
+            amount: total,
+            description: `Order #${orderNumber}`,
+            referenceId: createdOrder.id,
+            referenceType: "ORDER",
+          },
+        })
 
-      // Update order status to completed
-      const completedOrder = await tx.orders.update({
-        where: { id: newOrder.id },
-        data: {
-          status: "COMPLETED",
-          completedAt: new Date(),
-          updatedAt: new Date(),
-        },
-      })
-
-      return completedOrder
-    })
+        return createdOrder
+      },
+      { timeout: 15000 }
+    )
 
     return NextResponse.json({
       success: true,

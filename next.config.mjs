@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable standalone output for Docker deployment
-  output: 'standalone',
-
   images: {
     remotePatterns: [
       {
@@ -25,11 +22,19 @@ const nextConfig = {
     },
   },
 
-  // Disable telemetry in production
+  webpack: (config, { dev, isServer }) => {
+    if (dev && isServer) {
+      config.optimization = config.optimization || {}
+      config.optimization.splitChunks = false
+    }
+    return config
+  },
+
+  // Production-specific settings
   ...(process.env.NODE_ENV === 'production' && {
+    output: 'standalone',
     productionBrowserSourceMaps: false,
   }),
 }
 
 export default nextConfig
-
