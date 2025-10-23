@@ -3,7 +3,7 @@
 # Optimized for production deployment
 # ========================================
 
-# Stage 1: Dependencies
+# Stage 1: Dependencies (Production only)
 FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat openssl
 
@@ -13,7 +13,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 
-# Install dependencies
+# Install production dependencies only
 RUN npm ci --only=production && \
     npm cache clean --force
 
@@ -23,10 +23,21 @@ RUN npx prisma generate
 # ========================================
 # Stage 2: Builder
 FROM node:20-alpine AS builder
+RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
+# Copy package files
+COPY package.json package-lock.json* ./
+COPY prisma ./prisma/
+
+# Install ALL dependencies (including dev dependencies needed for build)
+RUN npm ci && \
+    npm cache clean --force
+
+# Generate Prisma Client
+RUN npx prisma generate
+
+# Copy source code
 COPY . .
 
 # Set environment for build
